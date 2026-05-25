@@ -196,14 +196,14 @@ Before submitting a PR, confirm:
 
 ---
 
-## 👥 Team Contacts
+## 👥 Team
 
-| Role | Name | Responsibility |
-|------|------|----------------|
-| Project Manager | TBD | Planning, coordination, documentation |
-| Data Engineer | TBD | Data pipelines, EDA |
-| ML Engineer | TBD | Modeling, experiment tracking |
-| MLOps Engineer | TBD | Deployment, CI/CD, monitoring |
+| Name |
+|------|
+| Avijeet |
+| Rakshith |
+| Anjan |
+| Dhruva |
 
 ---
 
