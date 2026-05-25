@@ -1,0 +1,55 @@
+# Python dependencies for STP Natality — Weight Analysis of Newborns
+# Install with: pip install -r requirements.txt
+
+# ── Core Data Science ──────────────────────────────────────────────────────────
+pandas>=2.1.0
+numpy>=1.26.0
+polars>=0.20.0               # High-performance alternative to pandas for large files
+scipy>=1.11.0
+
+# ── Visualization ──────────────────────────────────────────────────────────────
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.18.0
+missingno>=0.5.2             # Missing value visualization
+
+# ── Machine Learning ───────────────────────────────────────────────────────────
+scikit-learn>=1.4.0
+xgboost>=2.0.0
+lightgbm>=4.1.0
+
+# ── Model Interpretability ─────────────────────────────────────────────────────
+shap>=0.44.0
+
+# ── Hyperparameter Optimization ────────────────────────────────────────────────
+optuna>=3.4.0
+
+# ── Data Validation ────────────────────────────────────────────────────────────
+great-expectations>=0.18.0
+
+# ── MLOps ─────────────────────────────────────────────────────────────────────
+mlflow>=2.9.0
+dvc>=3.30.0
+
+# ── API ────────────────────────────────────────────────────────────────────────
+fastapi>=0.108.0
+uvicorn[standard]>=0.25.0
+pydantic>=2.5.0
+
+# ── Monitoring ─────────────────────────────────────────────────────────────────
+evidently>=0.4.13
+prometheus-client>=0.19.0
+
+# ── Testing ────────────────────────────────────────────────────────────────────
+pytest>=7.4.0
+pytest-cov>=4.1.0
+httpx>=0.26.0                # For FastAPI integration tests
+
+# ── Code Quality ───────────────────────────────────────────────────────────────
+black>=23.12.0
+flake8>=7.0.0
+isort>=5.13.0
+
+# ── Notebooks ──────────────────────────────────────────────────────────────────
+jupyter>=1.0.0
+ipykernel>=6.28.0

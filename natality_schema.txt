@@ -1,0 +1,26 @@
+year_fix: Four-digit year of the birth. Example: 1975.
+month: Month index of the date of birth, where 1=January. 
+day: Day of birth, starting from 1. 
+state: The two character postal code for the state. Entries after 2021 do not include this value.
+is_male: TRUE if the child is male, FALSE if female.
+weight_pounds: Weight of the child, in pounds.
+plurality: How many children were born as a result of this pregnancy. twins=2, triplets=3, and so on. 
+apgar_1min: Apgar scores measure the health of a newborn child on a scale from 0-10. Value after 1 minute. Available from 1995-2019.
+apgar_5min: Apgar scores measure the health of a newborn child on a scale from 0-10. Value after 5 minutes. Available from 1995-2019.
+mother_residence_state: The two-letter postal code of the mother's state of residence when the child was born.
+mother_age: Reported age of the mother when giving birth.
+gestation_weeks: The number of weeks of the pregnancy.
+lmp: Date of the last menstrual period in the format MMDDYYYY. Unknown values are recorded as "99" or "9999".
+mother_married: True if the mother was married when she gave birth.
+mother_birth_state: The two-letter postal code of the mother's birth state.
+cigarette_use: True if the mother smoked cigarettes. Available starting 2020.
+cigarettes_per_day: Number of cigarettes smoked by the mother per day. Available starting 2020.
+alcohol_use: True if the mother used alcohol. Available starting 2006.
+drinks_per_week: Number of drinks per week consumed by the mother. Available starting 2006.
+weight_gain_pounds: Number of pounds gained by the mother during pregnancy.
+born_alive_alive: Number of children previously born to the mother who are now living.
+born_alive_dead: Number of children previously born to the mother who are now dead.
+born_dead: Number of children who were born dead (i.e. miscarriages) 
+ever_born: Total number of children to whom the woman has ever given birth (includes the current birth).
+father_age: Age of the father when the child was born.
+record_weight: 1 or 2, where 1 is a row from a full-reporting area, and 2 is a row from a 50% sample area.
