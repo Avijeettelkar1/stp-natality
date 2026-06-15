@@ -1,0 +1,67 @@
+name: stp-natality
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+
+  # Core Data Science
+  - numpy>=1.26.0
+  - pandas>=2.1.0
+  - scipy>=1.11.0
+
+  # Visualization
+  - matplotlib>=3.8.0
+  - seaborn>=0.13.0
+
+  # Notebooks
+  - jupyter>=1.0.0
+  - ipykernel>=6.28.0
+
+  - pip:
+    # High-performance I/O
+    - polars>=0.20.0
+
+    # Visualization (pip-only)
+    - plotly>=5.18.0
+    - missingno>=0.5.2
+
+    # Machine Learning
+    - scikit-learn>=1.4.0
+    - xgboost>=2.0.0
+    - lightgbm>=4.1.0
+
+    # Interpretability & HPO
+    - shap>=0.44.0
+    - optuna>=3.4.0
+
+    # Data Validation
+    - great-expectations>=0.18.0
+
+    # MLOps
+    - mlflow>=2.9.0
+    - dvc>=3.30.0
+
+    # API
+    - fastapi>=0.108.0
+    - uvicorn[standard]>=0.25.0
+    - pydantic>=2.5.0
+
+    # Monitoring
+    - evidently>=0.4.13
+    - prometheus-client>=0.19.0
+
+    # Testing
+    - pytest>=7.4.0
+    - pytest-cov>=4.1.0
+    - httpx>=0.26.0
+
+    # Code Quality
+    - black>=23.12.0
+    - flake8>=7.0.0
+    - isort>=5.13.0
+
+    # Parquet I/O
+    - pyarrow>=14.0.0

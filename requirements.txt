@@ -50,6 +50,9 @@ black>=23.12.0
 flake8>=7.0.0
 isort>=5.13.0
 
+# ── Parquet I/O ────────────────────────────────────────────────────────────────
+pyarrow>=14.0.0              # Required by split.py for Parquet read/write
+
 # ── Notebooks ──────────────────────────────────────────────────────────────────
 jupyter>=1.0.0
 ipykernel>=6.28.0

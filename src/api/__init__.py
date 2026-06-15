@@ -1,0 +1,1 @@
+"""FastAPI prediction service modules."""

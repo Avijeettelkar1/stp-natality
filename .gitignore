@@ -35,10 +35,18 @@ venv.bak/
 # ============================================================
 # DATA FILES — Large files tracked by DVC instead of Git
 # ============================================================
-newborn_data/
-data/raw/
-data/processed/
-data/external/
+# Ignore raw data files but allow DVC pointer (.dvc) files
+newborn_data/*
+!newborn_data/*.dvc
+!newborn_data/.gitignore
+data/raw/*
+!data/raw/*.dvc
+!data/raw/.gitignore
+data/processed/*
+!data/processed/*.dvc
+!data/processed/.gitignore
+data/external/*
+!data/external/.gitignore
 *.csv
 *.parquet
 *.feather

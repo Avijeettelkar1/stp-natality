@@ -11,8 +11,8 @@
 
 | Phase | Status | Owner | Due |
 |-------|--------|-------|-----|
-| 1. Business Understanding | ⬜ Not Started | PM / DS Translator | Week 2 |
-| 2. Data Engineering | ⬜ Not Started | Data Engineer | Week 5 |
+| 1. Business Understanding | ✅ Complete | PM / DS Translator | Week 2 |
+| 2. Data Engineering | 🔄 In Progress | Data Engineer | Week 5 |
 | 3. Modeling | ⬜ Not Started | ML Engineer | Week 9 |
 | 4. Evaluation | ⬜ Not Started | Full Team | Week 11 |
 | 5. Deployment | ⬜ Not Started | MLOps Engineer | Week 15 |
@@ -28,64 +28,64 @@
 > **Goal:** Establish a shared, unambiguous understanding of the problem, define measurable success criteria, and assess project feasibility.
 
 ### 1.1 Problem Conceptualization & Scoping
-- [ ] Define the business problem in precise, domain-specific terms
+- [x] Define the business problem in precise, domain-specific terms
   - *"Predict the birth weight (in grams) of newborns from prenatal and demographic data to assist physicians in identifying underweight/overweight risk."*
-- [ ] Identify the primary **stakeholders** and their roles
-  - [ ] Healthcare providers (primary end-users)
-  - [ ] Hospital data custodians
-  - [ ] Research advisors (Prof. Dr. Turowski, M. Sc. Haertel)
-- [ ] Formulate the **DS problem type**: Supervised Regression
-- [ ] Identify the **prediction target**: Birth weight (continuous, in grams)
-- [ ] Define **clinical relevance thresholds**:
-  - [ ] Low birth weight (LBW): < 2,500g
-  - [ ] Very low birth weight (VLBW): < 1,500g
-  - [ ] Macrosomia: > 4,000g
-- [ ] Document the **impact of wrong predictions** (false negatives for LBW)
+- [x] Identify the primary **stakeholders** and their roles
+  - [x] Healthcare providers (primary end-users)
+  - [x] Hospital data custodians
+  - [x] Research advisors (Prof. Dr. Turowski, M. Sc. Haertel)
+- [x] Formulate the **DS problem type**: Supervised Regression
+- [x] Identify the **prediction target**: Birth weight (continuous, in grams)
+- [x] Define **clinical relevance thresholds**:
+  - [x] Low birth weight (LBW): < 2,500g
+  - [x] Very low birth weight (VLBW): < 1,500g
+  - [x] Macrosomia: > 4,000g
+- [x] Document the **impact of wrong predictions** (false negatives for LBW)
 
 ### 1.2 Success Criteria Definition
-- [ ] Define **ML performance metrics** (primary + secondary):
-  - [ ] Mean Absolute Error (MAE) — primary metric; target: < 300g
-  - [ ] Root Mean Squared Error (RMSE) — penalizes large errors
-  - [ ] R² Score — overall variance explained
-  - [ ] Clinical Sensitivity/Specificity for LBW classification threshold
-- [ ] Define **business success criteria**:
-  - [ ] System reduces undetected LBW cases in test simulation
-  - [ ] Prediction latency < 500ms per request
-  - [ ] System uptime > 99% in monitoring period
-- [ ] Get stakeholder sign-off on acceptance criteria
+- [x] Define **ML performance metrics** (primary + secondary):
+  - [x] Mean Absolute Error (MAE) — primary metric; target: < 300g
+  - [x] Root Mean Squared Error (RMSE) — penalizes large errors
+  - [x] R² Score — overall variance explained
+  - [x] Clinical Sensitivity/Specificity for LBW classification threshold
+- [x] Define **business success criteria**:
+  - [x] System reduces undetected LBW cases in test simulation
+  - [x] Prediction latency < 500ms per request
+  - [x] System uptime > 99% in monitoring period
+- [x] Get stakeholder sign-off on acceptance criteria
 
 ### 1.3 Feasibility Assessment
-- [ ] Assess **data availability**: Is the historical dataset sufficient?
-  - [ ] Minimum sample size analysis (statistical power)
-  - [ ] Temporal coverage of the dataset
-- [ ] Assess **ethical and legal considerations**:
-  - [ ] Data anonymization/de-identification status
-  - [ ] GDPR compliance considerations
-  - [ ] Institutional approval for data use
-- [ ] Assess **technical feasibility**: team skills, infrastructure requirements
-- [ ] Conduct initial **literature review**:
-  - [ ] Review existing birth weight prediction models and studies
-  - [ ] Review MLOps-based DS process model (CRISP-ML(DM) or equivalent)
-  - [ ] Identify key features commonly used in birth weight prediction
+- [x] Assess **data availability**: Is the historical dataset sufficient?
+  - [x] Minimum sample size analysis (statistical power)
+  - [x] Temporal coverage of the dataset
+- [x] Assess **ethical and legal considerations**:
+  - [x] Data anonymization/de-identification status
+  - [x] GDPR compliance considerations
+  - [x] Institutional approval for data use
+- [x] Assess **technical feasibility**: team skills, infrastructure requirements
+- [x] Conduct initial **literature review**:
+  - [x] Review existing birth weight prediction models and studies
+  - [x] Review MLOps-based DS process model (CRISP-ML(DM) or equivalent)
+  - [x] Identify key features commonly used in birth weight prediction
 
 ### 1.4 Project Planning
-- [ ] Create **project charter** document
-- [ ] Define **team roles & responsibilities** (see [project_plan.md](./docs/project_plan.md))
-- [ ] Set up **communication channels** (e.g., Teams, Slack)
-- [ ] Create **project timeline** with milestones (5-month schedule)
-- [ ] Set up **Git repository** with branch strategy (e.g., GitFlow)
-- [ ] Configure **project management board** (GitHub Projects / Jira / Trello)
-- [ ] Schedule **regular sync meetings** (e.g., weekly sprint reviews)
+- [x] Create **project charter** document
+- [x] Define **team roles & responsibilities** (see [project_plan.md](./docs/project_plan.md))
+- [x] Set up **communication channels** (e.g., Teams, Slack)
+- [x] Create **project timeline** with milestones (5-month schedule)
+- [x] Set up **Git repository** with branch strategy (e.g., GitFlow)
+- [x] Configure **project management board** (GitHub Projects / Jira / Trello)
+- [x] Schedule **regular sync meetings** (e.g., weekly sprint reviews)
 
 ### 1.5 Environment & Infrastructure Setup
-- [ ] Initialize Git repository and `.gitignore`
-- [ ] Set up Python virtual environment (`environment.yml` or `requirements.txt`)
-- [ ] Install and configure **MLflow** tracking server
-- [ ] Install and initialize **DVC** for data versioning
-- [ ] Set up shared remote storage for DVC (e.g., Google Drive, S3, or local NAS)
-- [ ] Verify all team members can clone repo and run the environment
+- [x] Initialize Git repository and `.gitignore`
+- [x] Set up Python virtual environment (`environment.yml` or `requirements.txt`)
+- [ ] Install and configure **MLflow** tracking server *(Phase 3)*
+- [x] Install and initialize **DVC** for data versioning
+- [ ] Set up shared remote storage for DVC (e.g., Google Drive, S3, or local NAS) *(configure when team shares access)*
+- [x] Verify all team members can clone repo and run the environment
 
-**📄 Deliverable:** `docs/business_understanding.md` — Problem statement, KPIs, feasibility analysis
+**📄 Deliverable:** `docs/business_understanding.md` — Problem statement, KPIs, feasibility analysis ✅
 
 ---
 
