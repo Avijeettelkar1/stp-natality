@@ -20,7 +20,6 @@ Usage:
 """
 
 import logging
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -37,11 +36,11 @@ BOOL_COLUMNS = ["is_male", "mother_married", "cigarette_use", "alcohol_use"]
 
 # Clinical/data constraints
 GESTATION_WEEKS_MIN = 20
-GESTATION_WEEKS_MAX = 44      # Values > 44 are almost certainly data errors
+GESTATION_WEEKS_MAX = 44  # Values > 44 are almost certainly data errors
 MOTHER_AGE_MIN = 10
 MOTHER_AGE_MAX = 60
-WEIGHT_POUNDS_MIN = 0.66      # ~300g — clinical minimum viable birth weight
-WEIGHT_POUNDS_MAX = 15.43     # ~7,000g — clinical maximum (macrosomia upper bound)
+WEIGHT_POUNDS_MIN = 0.66  # ~300g — clinical minimum viable birth weight
+WEIGHT_POUNDS_MAX = 15.43  # ~7,000g — clinical maximum (macrosomia upper bound)
 
 # Pound → gram conversion
 LBS_TO_GRAMS = 453.592
@@ -97,14 +96,18 @@ def cast_booleans(df: pd.DataFrame) -> pd.DataFrame:
                 .astype(str)
                 .str.strip()
                 .str.lower()
-                .map({"true": 1, "false": 0, "nan": pd.NA, "none": pd.NA, "<na>": pd.NA})
+                .map(
+                    {"true": 1, "false": 0, "nan": pd.NA, "none": pd.NA, "<na>": pd.NA}
+                )
                 .astype(pd.Int8Dtype())
             )
         elif col_dtype == bool or col_dtype == "bool":
             df[col] = df[col].astype(pd.Int8Dtype())
         # If already numeric, leave as-is
 
-    logger.info("Boolean columns cast to Int8: %s", [c for c in BOOL_COLUMNS if c in df.columns])
+    logger.info(
+        "Boolean columns cast to Int8: %s", [c for c in BOOL_COLUMNS if c in df.columns]
+    )
     return df
 
 
@@ -138,7 +141,9 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     if "lmp" in df.columns:
         # Mark unknown LMP as NaN (sentinel: "99" or "9999" or similar patterns)
         lmp_str = df["lmp"].astype(str).str.strip()
-        unknown_mask = lmp_str.isin(["99", "9999", "nan", ""]) | lmp_str.str.match(r"^9+$")
+        unknown_mask = lmp_str.isin(["99", "9999", "nan", ""]) | lmp_str.str.match(
+            r"^9+$"
+        )
         n = unknown_mask.sum()
         df.loc[unknown_mask, "lmp"] = np.nan
         logger.info("lmp: replaced %d unknown LMP values with NaN", n)
@@ -171,36 +176,45 @@ def cap_outliers(df: pd.DataFrame) -> pd.DataFrame:
 
     if "gestation_weeks" in df.columns:
         out_of_range = (
-            (df["gestation_weeks"] < GESTATION_WEEKS_MIN) |
-            (df["gestation_weeks"] > GESTATION_WEEKS_MAX)
+            (df["gestation_weeks"] < GESTATION_WEEKS_MIN)
+            | (df["gestation_weeks"] > GESTATION_WEEKS_MAX)
         ) & df["gestation_weeks"].notna()
         n = out_of_range.sum()
         df["gestation_weeks"] = df["gestation_weeks"].clip(
             lower=GESTATION_WEEKS_MIN, upper=GESTATION_WEEKS_MAX
         )
-        logger.info("gestation_weeks: capped %d out-of-range values to [%d, %d]",
-                    n, GESTATION_WEEKS_MIN, GESTATION_WEEKS_MAX)
+        logger.info(
+            "gestation_weeks: capped %d out-of-range values to [%d, %d]",
+            n,
+            GESTATION_WEEKS_MIN,
+            GESTATION_WEEKS_MAX,
+        )
 
     if "mother_age" in df.columns:
         out_of_range = (
-            (df["mother_age"] < MOTHER_AGE_MIN) |
-            (df["mother_age"] > MOTHER_AGE_MAX)
+            (df["mother_age"] < MOTHER_AGE_MIN) | (df["mother_age"] > MOTHER_AGE_MAX)
         ) & df["mother_age"].notna()
         n = out_of_range.sum()
         df["mother_age"] = df["mother_age"].clip(
             lower=MOTHER_AGE_MIN, upper=MOTHER_AGE_MAX
         )
-        logger.info("mother_age: capped %d out-of-range values to [%d, %d]",
-                    n, MOTHER_AGE_MIN, MOTHER_AGE_MAX)
+        logger.info(
+            "mother_age: capped %d out-of-range values to [%d, %d]",
+            n,
+            MOTHER_AGE_MIN,
+            MOTHER_AGE_MAX,
+        )
 
     if "weight_pounds" in df.columns:
         # Flag — do NOT remove (that happens in drop_null_targets)
         df["outlier_weight"] = (
-            (df["weight_pounds"] < WEIGHT_POUNDS_MIN) |
-            (df["weight_pounds"] > WEIGHT_POUNDS_MAX)
+            (df["weight_pounds"] < WEIGHT_POUNDS_MIN)
+            | (df["weight_pounds"] > WEIGHT_POUNDS_MAX)
         ).astype(pd.Int8Dtype())
         n = df["outlier_weight"].sum()
-        logger.info("weight_pounds: flagged %d clinical outliers in 'outlier_weight' column", n)
+        logger.info(
+            "weight_pounds: flagged %d clinical outliers in 'outlier_weight' column", n
+        )
 
     return df
 
@@ -255,9 +269,8 @@ def drop_null_targets(df: pd.DataFrame) -> pd.DataFrame:
     n_null = null_mask.sum()
 
     # Drop extreme clinical outliers (likely data errors)
-    extreme_mask = (
-        (df["weight_pounds"] < WEIGHT_POUNDS_MIN) |
-        (df["weight_pounds"] > WEIGHT_POUNDS_MAX)
+    extreme_mask = (df["weight_pounds"] < WEIGHT_POUNDS_MIN) | (
+        df["weight_pounds"] > WEIGHT_POUNDS_MAX
     )
     n_extreme = extreme_mask.sum()
 
@@ -267,7 +280,10 @@ def drop_null_targets(df: pd.DataFrame) -> pd.DataFrame:
     logger.info(
         "drop_null_targets: removed %d null + %d extreme outlier rows "
         "(%d → %d rows, %.2f%% removed)",
-        n_null, n_extreme, n_before, n_after,
+        n_null,
+        n_extreme,
+        n_before,
+        n_after,
         100 * (n_before - n_after) / max(n_before, 1),
     )
     return df

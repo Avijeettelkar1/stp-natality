@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.data.split import get_X_y, get_feature_columns, temporal_split
+from src.data.split import get_feature_columns, get_X_y, temporal_split
 
 
 @pytest.fixture

@@ -4,25 +4,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.data.preprocess import (
-    cap_outliers,
-    cast_booleans,
-    convert_target,
-    drop_leakage_columns,
-    drop_null_targets,
-    handle_missing_values,
-    run_preprocessing,
-)
-from src.data.feature_engineering import (
-    add_cyclical_month,
-    add_gestation_flags,
-    add_lmp_known_flag,
-    add_mother_age_group,
-    add_multiple_birth_flag,
-    add_parity,
-    engineer_features,
-)
-
+from src.data.feature_engineering import (add_cyclical_month,
+                                          add_gestation_flags,
+                                          add_lmp_known_flag,
+                                          add_mother_age_group,
+                                          add_multiple_birth_flag, add_parity,
+                                          engineer_features)
+from src.data.preprocess import (cap_outliers, cast_booleans, convert_target,
+                                 drop_leakage_columns, drop_null_targets,
+                                 handle_missing_values, run_preprocessing)
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
@@ -49,7 +39,7 @@ def sample_raw_df() -> pd.DataFrame:
             "born_alive_dead": [0, 0, 0, 1, 0],
             "born_dead": [0, 1, 0, 0, 0],
             "ever_born": [2, 1, 3, 5, 1],
-            "father_age": [30, 99, 28, 45, 33],   # 99 = unknown
+            "father_age": [30, 99, 28, 45, 33],  # 99 = unknown
             "record_weight": [1, 1, 2, 1, 2],
             "cigarette_use": [None, None, None, None, None],
             "cigarettes_per_day": [None, None, None, None, None],
@@ -115,7 +105,10 @@ def test_handle_missing_father_age_99(sample_raw_df):
 
 
 def test_handle_missing_gestation_47_not_sentinel(sample_raw_df):
-    """gestation_weeks=47 is an outlier but NOT a sentinel (99), should not be NaN here."""
+    """gestation_weeks=47 is an outlier but NOT a sentinel (99).
+
+    Should not be set to NaN here — that happens in cap_outliers.
+    """
     result = handle_missing_values(sample_raw_df)
     assert result["gestation_weeks"].iloc[4] == 47  # still 47 before cap_outliers
 

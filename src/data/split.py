@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 # ── Split Thresholds ───────────────────────────────────────────────────────────
 
 # Year thresholds for temporal split
-VAL_START_YEAR = 2010    # validation set starts from this year (inclusive)
-TEST_START_YEAR = 2016   # test set starts from this year (inclusive)
+VAL_START_YEAR = 2010  # validation set starts from this year (inclusive)
+TEST_START_YEAR = 2016  # test set starts from this year (inclusive)
 
 # Output file names (Parquet format for efficiency with large data)
 TRAIN_FILENAME = "train.parquet"
@@ -97,12 +97,20 @@ def _log_split_info(
         if len(split_df) == 0:
             logger.warning("%s split is empty!", name)
             continue
-        year_min = int(split_df["year_fix"].min()) if "year_fix" in split_df.columns else "?"
-        year_max = int(split_df["year_fix"].max()) if "year_fix" in split_df.columns else "?"
+        year_min = (
+            int(split_df["year_fix"].min()) if "year_fix" in split_df.columns else "?"
+        )
+        year_max = (
+            int(split_df["year_fix"].max()) if "year_fix" in split_df.columns else "?"
+        )
         pct = 100 * len(split_df) / max(total, 1)
         logger.info(
             "  %s: %d rows (%.1f%%) | years %s–%s",
-            name, len(split_df), pct, year_min, year_max,
+            name,
+            len(split_df),
+            pct,
+            year_min,
+            year_max,
         )
 
 
@@ -182,12 +190,12 @@ def load_splits(
 
 # Columns that are targets or identifiers — not model input features
 NON_FEATURE_COLUMNS = [
-    "weight_pounds",        # original target (before conversion)
-    "weight_grams",         # primary target — held out from X
-    "outlier_weight",       # quality flag, not a feature
-    "source_year",          # traceability metadata
-    "source_file",          # traceability metadata
-    "lmp",                  # raw LMP string — lmp_known flag is the usable form
+    "weight_pounds",  # original target (before conversion)
+    "weight_grams",  # primary target — held out from X
+    "outlier_weight",  # quality flag, not a feature
+    "source_year",  # traceability metadata
+    "source_file",  # traceability metadata
+    "lmp",  # raw LMP string — lmp_known flag is the usable form
 ]
 
 
@@ -233,6 +241,8 @@ def get_X_y(
 
     logger.info(
         "get_X_y: X shape=%s, y shape=%s (target='%s')",
-        X.shape, y.shape, target_col,
+        X.shape,
+        y.shape,
+        target_col,
     )
     return X, y

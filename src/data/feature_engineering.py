@@ -5,7 +5,8 @@ Creates derived, domain-informed features from the cleaned natality DataFrame
 
 New features produced:
 - ``weight_gain_kg``          — maternal weight gain converted to kg
-- ``parity``                  — total prior births (born_alive_alive + born_alive_dead + born_dead)
+- ``parity``                  — total prior births
+  (born_alive_alive + born_alive_dead + born_dead)
 - ``is_multiple_birth``       — 1 if plurality > 1 (twins, triplets, etc.)
 - ``lmp_known``               — 1 if last menstrual period date is not null
 - ``birth_month_sin``         — sine encoding of month (cyclical)
@@ -37,7 +38,7 @@ POST_TERM_WEEKS = 41
 
 # Maternal age group bins and labels
 MOTHER_AGE_BINS = [0, 19, 29, 39, 120]
-MOTHER_AGE_LABELS = [0, 1, 2, 3]   # 0=teen (≤19), 1=20s, 2=30s, 3=40+
+MOTHER_AGE_LABELS = [0, 1, 2, 3]  # 0=teen (≤19), 1=20s, 2=30s, 3=40+
 
 # Pounds → kg
 LBS_TO_KG = 0.453592
@@ -78,15 +79,17 @@ def add_parity(df: pd.DataFrame) -> pd.DataFrame:
     """
     required = ["born_alive_alive", "born_alive_dead", "born_dead"]
     if not all(c in df.columns for c in required):
-        logger.warning("Cannot compute 'parity' — missing columns: %s",
-                       [c for c in required if c not in df.columns])
+        logger.warning(
+            "Cannot compute 'parity' — missing columns: %s",
+            [c for c in required if c not in df.columns],
+        )
         return df
 
     df = df.copy()
     df["parity"] = (
-        df["born_alive_alive"].fillna(0) +
-        df["born_alive_dead"].fillna(0) +
-        df["born_dead"].fillna(0)
+        df["born_alive_alive"].fillna(0)
+        + df["born_alive_dead"].fillna(0)
+        + df["born_dead"].fillna(0)
     ).astype(pd.Int16Dtype())
     logger.debug("Added 'parity' feature (median=%.0f).", df["parity"].median())
     return df
@@ -197,13 +200,18 @@ def add_gestation_flags(df: pd.DataFrame) -> pd.DataFrame:
     if "gestation_weeks" not in df.columns:
         return df
     df = df.copy()
-    df["gestation_preterm"] = (df["gestation_weeks"] < PRETERM_WEEKS).astype(pd.Int8Dtype())
-    df["gestation_post_term"] = (df["gestation_weeks"] > POST_TERM_WEEKS).astype(pd.Int8Dtype())
+    df["gestation_preterm"] = (df["gestation_weeks"] < PRETERM_WEEKS).astype(
+        pd.Int8Dtype()
+    )
+    df["gestation_post_term"] = (df["gestation_weeks"] > POST_TERM_WEEKS).astype(
+        pd.Int8Dtype()
+    )
     n_preterm = df["gestation_preterm"].sum()
     n_post = df["gestation_post_term"].sum()
     logger.debug(
         "Added gestation flags: %d preterm (<37wk), %d post-term (>41wk).",
-        n_preterm, n_post,
+        n_preterm,
+        n_post,
     )
     return df
 
@@ -229,8 +237,11 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame enriched with all engineered features.
     """
-    logger.info("=== Starting feature engineering (input: %d rows, %d cols) ===",
-                len(df), len(df.columns))
+    logger.info(
+        "=== Starting feature engineering (input: %d rows, %d cols) ===",
+        len(df),
+        len(df.columns),
+    )
 
     df = add_weight_gain_kg(df)
     df = add_parity(df)
@@ -241,13 +252,21 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = add_gestation_flags(df)
 
     new_features = [
-        "weight_gain_kg", "parity", "is_multiple_birth", "lmp_known",
-        "birth_month_sin", "birth_month_cos", "mother_age_group",
-        "gestation_preterm", "gestation_post_term",
+        "weight_gain_kg",
+        "parity",
+        "is_multiple_birth",
+        "lmp_known",
+        "birth_month_sin",
+        "birth_month_cos",
+        "mother_age_group",
+        "gestation_preterm",
+        "gestation_post_term",
     ]
     existing_new = [f for f in new_features if f in df.columns]
     logger.info(
         "=== Feature engineering complete (output: %d rows, %d cols) — added: %s ===",
-        len(df), len(df.columns), existing_new,
+        len(df),
+        len(df.columns),
+        existing_new,
     )
     return df

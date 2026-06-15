@@ -10,7 +10,6 @@ Usage:
 """
 
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -34,33 +33,33 @@ NATALITY_FILES = {
 
 # The 26 columns in the shared schema (in order)
 COLUMN_NAMES = [
-    "source_year",         # year group label (added by us; not in raw file)
-    "year_fix",            # actual 4-digit year of birth
-    "month",               # month of birth (1–12)
-    "day",                 # day of birth (1–31)
-    "weight_pounds",       # TARGET: birth weight in pounds
-    "plurality",           # number of children born (1=singleton, 2=twins …)
-    "is_male",             # bool: TRUE if child is male
-    "apgar_1min",          # LEAKAGE — Apgar score at 1 minute (post-birth)
-    "apgar_5min",          # LEAKAGE — Apgar score at 5 minutes (post-birth)
-    "state",               # state of birth (postal code)
+    "source_year",  # year group label (added by us; not in raw file)
+    "year_fix",  # actual 4-digit year of birth
+    "month",  # month of birth (1–12)
+    "day",  # day of birth (1–31)
+    "weight_pounds",  # TARGET: birth weight in pounds
+    "plurality",  # number of children born (1=singleton, 2=twins …)
+    "is_male",  # bool: TRUE if child is male
+    "apgar_1min",  # LEAKAGE — Apgar score at 1 minute (post-birth)
+    "apgar_5min",  # LEAKAGE — Apgar score at 5 minutes (post-birth)
+    "state",  # state of birth (postal code)
     "mother_residence_state",  # mother's state of residence
     "mother_birth_state",  # mother's state of birth
-    "mother_age",          # mother's age at birth
-    "mother_married",      # bool: TRUE if married
-    "gestation_weeks",     # pregnancy duration in weeks
-    "lmp",                 # last menstrual period (MMDDYYYY; 99/9999=unknown)
+    "mother_age",  # mother's age at birth
+    "mother_married",  # bool: TRUE if married
+    "gestation_weeks",  # pregnancy duration in weeks
+    "lmp",  # last menstrual period (MMDDYYYY; 99/9999=unknown)
     "weight_gain_pounds",  # maternal weight gain during pregnancy
-    "cigarette_use",       # bool: smoked during pregnancy (2020+ only)
+    "cigarette_use",  # bool: smoked during pregnancy (2020+ only)
     "cigarettes_per_day",  # cigarettes/day (2020+ only)
-    "alcohol_use",         # bool: alcohol use (2006+ only)
-    "drinks_per_week",     # drinks/week (2006+ only)
-    "born_alive_alive",    # prior children still living
-    "born_alive_dead",     # prior children who have died
-    "born_dead",           # prior stillbirths
-    "ever_born",           # total children ever born (including current)
-    "father_age",          # father's age at birth
-    "record_weight",       # 1=full-reporting; 2=50% sample
+    "alcohol_use",  # bool: alcohol use (2006+ only)
+    "drinks_per_week",  # drinks/week (2006+ only)
+    "born_alive_alive",  # prior children still living
+    "born_alive_dead",  # prior children who have died
+    "born_dead",  # prior stillbirths
+    "ever_born",  # total children ever born (including current)
+    "father_age",  # father's age at birth
+    "record_weight",  # 1=full-reporting; 2=50% sample
 ]
 
 # Actual raw columns (the file doesn't include 'source_year', we add it)
@@ -155,9 +154,7 @@ def load_all_files(
     frames = []
     files_to_load = file_filter or list(NATALITY_FILES.keys())
 
-    logger.info(
-        "Loading %d natality file(s) from: %s", len(files_to_load), data_dir
-    )
+    logger.info("Loading %d natality file(s) from: %s", len(files_to_load), data_dir)
 
     for filename in files_to_load:
         filepath = data_dir / filename
@@ -206,7 +203,9 @@ def get_data_summary(df: pd.DataFrame) -> dict:
     return {
         "n_rows": len(df),
         "n_cols": len(df.columns),
-        "files_included": df["source_file"].unique().tolist() if "source_file" in df.columns else [],
+        "files_included": (
+            df["source_file"].unique().tolist() if "source_file" in df.columns else []
+        ),
         "year_range": {
             "min": int(df["year_fix"].min()) if "year_fix" in df.columns else None,
             "max": int(df["year_fix"].max()) if "year_fix" in df.columns else None,
