@@ -59,7 +59,7 @@ data/external/*
 # ============================================================
 # Model Artifacts — Tracked by MLflow / DVC
 # ============================================================
-models/
+/models/
 mlruns/
 *.joblib
 *.model
