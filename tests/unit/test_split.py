@@ -4,7 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.data.split import get_feature_columns, get_X_y, temporal_split
+from src.data.split import (
+    get_feature_columns,
+    get_X_y,
+    load_splits,
+    save_splits,
+    temporal_split,
+)
 
 
 @pytest.fixture
@@ -72,3 +78,44 @@ def test_get_X_y_missing_target_raises(sample_df):
     df = sample_df.drop(columns=["weight_grams"])
     with pytest.raises(ValueError, match="weight_grams"):
         get_X_y(df)
+
+
+# ── Tests: save_splits / load_splits ──────────────────────────────────────────
+
+
+def test_save_splits_creates_parquet_files(tmp_path, sample_df):
+    train, val, test = temporal_split(sample_df)
+    save_splits(train, val, test, out_dir=tmp_path)
+    assert (tmp_path / "train.parquet").exists()
+    assert (tmp_path / "val.parquet").exists()
+    assert (tmp_path / "test.parquet").exists()
+
+
+def test_load_splits_returns_correct_shapes(tmp_path, sample_df):
+    train, val, test = temporal_split(sample_df)
+    save_splits(train, val, test, out_dir=tmp_path)
+    train_l, val_l, test_l = load_splits(data_dir=tmp_path)
+    assert len(train_l) == len(train)
+    assert len(val_l) == len(val)
+    assert len(test_l) == len(test)
+
+
+def test_save_and_load_roundtrip_preserves_columns(tmp_path, sample_df):
+    train, val, test = temporal_split(sample_df)
+    save_splits(train, val, test, out_dir=tmp_path)
+    train_l, _, _ = load_splits(data_dir=tmp_path)
+    assert set(train_l.columns) == set(train.columns)
+
+
+def test_load_splits_missing_file_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        load_splits(data_dir=tmp_path)
+
+
+def test_temporal_split_empty_splits_do_not_raise(sample_df):
+    """All-early data → empty val and test; _log_split_info must not crash."""
+    early_df = sample_df[sample_df["year_fix"] < 2000].copy()
+    train, val, test = temporal_split(early_df)
+    assert len(train) > 0
+    assert len(val) == 0
+    assert len(test) == 0
