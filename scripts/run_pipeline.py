@@ -53,7 +53,10 @@ def main(nrows_per_file: int | None = None) -> None:
     summary = get_data_summary(df_raw)
     logger.info(
         "Loaded %d rows × %d cols (%.1f MB) in %.1fs",
-        summary["n_rows"], summary["n_cols"], summary["memory_mb"], time.time() - t0,
+        summary["n_rows"],
+        summary["n_cols"],
+        summary["memory_mb"],
+        time.time() - t0,
     )
 
     # ── Step 2: Preprocessing ──────────────────────────────────────────────────
@@ -62,7 +65,8 @@ def main(nrows_per_file: int | None = None) -> None:
     df_clean = run_preprocessing(df_raw)
     logger.info(
         "Preprocessing done: %d → %d rows (%.2f%% removed) in %.1fs",
-        summary["n_rows"], len(df_clean),
+        summary["n_rows"],
+        len(df_clean),
         100 * (summary["n_rows"] - len(df_clean)) / max(summary["n_rows"], 1),
         time.time() - t0,
     )
@@ -73,7 +77,9 @@ def main(nrows_per_file: int | None = None) -> None:
     df_feat = engineer_features(df_clean)
     feature_cols = get_feature_columns(df_feat)
     logger.info(
-        "Feature engineering done: %d feature columns in %.1fs", len(feature_cols), time.time() - t0
+        "Feature engineering done: %d feature columns in %.1fs",
+        len(feature_cols),
+        time.time() - t0,
     )
 
     # ── Step 4: Temporal Split ────────────────────────────────────────────────
@@ -102,8 +108,10 @@ def main(nrows_per_file: int | None = None) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run STP Natality data pipeline")
     parser.add_argument(
-        "--nrows", type=int, default=None,
-        help="Rows per file to load (None=full dataset)"
+        "--nrows",
+        type=int,
+        default=None,
+        help="Rows per file to load (None=full dataset)",
     )
     args = parser.parse_args()
     main(nrows_per_file=args.nrows)

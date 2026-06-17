@@ -11,6 +11,7 @@ from src.data.feature_engineering import (
     add_mother_age_group,
     add_multiple_birth_flag,
     add_parity,
+    add_weight_gain_kg,
     engineer_features,
 )
 from src.data.preprocess import (
@@ -256,8 +257,6 @@ def test_add_gestation_flags_preterm(clean_df):
 
 def test_add_weight_gain_kg_conversion(clean_df):
     """weight_gain_kg should equal weight_gain_pounds × 0.453592."""
-    from src.data.feature_engineering import add_weight_gain_kg
-
     result = add_weight_gain_kg(clean_df)
     assert "weight_gain_kg" in result.columns
     # Verify conversion factor within floating-point tolerance
@@ -268,8 +267,6 @@ def test_add_weight_gain_kg_conversion(clean_df):
 
 def test_add_weight_gain_kg_non_negative(clean_df):
     """weight_gain_kg should not be negative (physical constraint)."""
-    from src.data.feature_engineering import add_weight_gain_kg
-
     result = add_weight_gain_kg(clean_df)
     non_null = result["weight_gain_kg"].dropna()
     assert (non_null >= 0).all()
