@@ -65,6 +65,22 @@ COLUMN_NAMES = [
 # Actual raw columns (the file doesn't include 'source_year', we add it)
 RAW_COLUMN_NAMES = COLUMN_NAMES[1:]  # everything except our added 'source_year'
 
+# Columns in the files that we want to keep (same as RAW_COLUMN_NAMES, used for filtering
+# after reading with header=0 which gives us the actual column names from the file).
+# Note: actual file header has 26 columns in a *different* order than COLUMN_NAMES.
+# We read with header=0 to get the file's own column names, then select/reorder.
+FILE_COLUMNS = [
+    "year_fix", "month", "day",
+    "weight_pounds", "plurality", "is_male",
+    "apgar_1min", "apgar_5min",
+    "state", "mother_residence_state", "mother_birth_state",
+    "mother_age", "mother_married", "gestation_weeks", "lmp",
+    "weight_gain_pounds", "cigarette_use", "cigarettes_per_day",
+    "alcohol_use", "drinks_per_week",
+    "born_alive_alive", "born_alive_dead", "born_dead", "ever_born",
+    "father_age", "record_weight",
+]
+
 
 # ── Core Functions ─────────────────────────────────────────────────────────────
 
@@ -76,8 +92,10 @@ def load_single_file(
 ) -> pd.DataFrame:
     """Load a single raw natality CSV file into a Pandas DataFrame.
 
-    The raw files are headerless CSVs. This function assigns the correct
-    26-column schema and adds a ``source_year`` column for traceability.
+    The raw files are CSVs **with a header row** whose column names match the
+    natality schema but may be in a different order than ``COLUMN_NAMES``.  
+    This function reads the file with ``header=0``, selects the 26 known columns,
+    and adds a ``source_year`` column for traceability.
 
     Args:
         filepath: Absolute or relative path to the raw natality file.
@@ -105,16 +123,22 @@ def load_single_file(
 
     logger.info("Loading file: %s (era=%s, nrows=%s)", filepath.name, era_year, nrows)
 
+    # The files have a header row — read it as-is, then select known columns.
     df = pd.read_csv(
         filepath,
-        header=None,
-        names=RAW_COLUMN_NAMES,
+        header=0,
         nrows=nrows,
         low_memory=False,
-        # Some files may be tab-separated or space-delimited — try comma first
         sep=",",
         on_bad_lines="warn",
     )
+
+    # Select only the 26 known schema columns (guards against unexpected extra cols)
+    available = [c for c in FILE_COLUMNS if c in df.columns]
+    missing   = [c for c in FILE_COLUMNS if c not in df.columns]
+    if missing:
+        logger.warning("Columns not found in %s: %s", filepath.name, missing)
+    df = df[available].copy()
 
     # Add traceability column
     df.insert(0, "source_year", era_year)

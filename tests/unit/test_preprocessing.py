@@ -4,15 +4,24 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.data.feature_engineering import (add_cyclical_month,
-                                          add_gestation_flags,
-                                          add_lmp_known_flag,
-                                          add_mother_age_group,
-                                          add_multiple_birth_flag, add_parity,
-                                          engineer_features)
-from src.data.preprocess import (cap_outliers, cast_booleans, convert_target,
-                                 drop_leakage_columns, drop_null_targets,
-                                 handle_missing_values, run_preprocessing)
+from src.data.feature_engineering import (
+    add_cyclical_month,
+    add_gestation_flags,
+    add_lmp_known_flag,
+    add_mother_age_group,
+    add_multiple_birth_flag,
+    add_parity,
+    engineer_features,
+)
+from src.data.preprocess import (
+    cap_outliers,
+    cast_booleans,
+    convert_target,
+    drop_leakage_columns,
+    drop_null_targets,
+    handle_missing_values,
+    run_preprocessing,
+)
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
@@ -245,7 +254,46 @@ def test_add_gestation_flags_preterm(clean_df):
     assert (preterm_rows["gestation_preterm"] == 1).all()
 
 
+def test_add_weight_gain_kg_conversion(clean_df):
+    """weight_gain_kg should equal weight_gain_pounds × 0.453592."""
+    from src.data.feature_engineering import add_weight_gain_kg
+
+    result = add_weight_gain_kg(clean_df)
+    assert "weight_gain_kg" in result.columns
+    # Verify conversion factor within floating-point tolerance
+    expected = clean_df["weight_gain_pounds"] * 0.453592
+    diff = (result["weight_gain_kg"] - expected.round(2)).abs()
+    assert diff.max() < 0.01, f"Unexpected kg conversion error: max diff = {diff.max()}"
+
+
+def test_add_weight_gain_kg_non_negative(clean_df):
+    """weight_gain_kg should not be negative (physical constraint)."""
+    from src.data.feature_engineering import add_weight_gain_kg
+
+    result = add_weight_gain_kg(clean_df)
+    non_null = result["weight_gain_kg"].dropna()
+    assert (non_null >= 0).all()
+
+
 def test_engineer_features_runs_without_error(clean_df):
     result = engineer_features(clean_df)
     assert isinstance(result, pd.DataFrame)
     assert len(result) == len(clean_df)
+
+
+def test_engineer_features_adds_all_expected_columns(clean_df):
+    """engineer_features should add all 9 expected derived features."""
+    result = engineer_features(clean_df)
+    expected_new_cols = [
+        "weight_gain_kg",
+        "parity",
+        "is_multiple_birth",
+        "lmp_known",
+        "birth_month_sin",
+        "birth_month_cos",
+        "mother_age_group",
+        "gestation_preterm",
+        "gestation_post_term",
+    ]
+    for col in expected_new_cols:
+        assert col in result.columns, f"Expected engineered feature '{col}' not found"
