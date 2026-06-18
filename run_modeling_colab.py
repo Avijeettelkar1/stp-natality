@@ -90,7 +90,12 @@ logger.info("Train=%d  Val=%d  Test=%d", len(train_df), len(val_df), len(test_df
 X_train, y_train = get_X_y(train_df)
 X_val,   y_val   = get_X_y(val_df)
 X_test,  y_test  = get_X_y(test_df)
-logger.info("LBW prevalence (train): %.2f%%", (y_train < 2500).mean() * 100)
+
+# Free the raw DataFrames — saves ~8 GB RAM before training begins
+import gc
+del train_df, val_df, test_df
+gc.collect()
+logger.info("Raw DataFrames freed. LBW prevalence (train): %.2f%%", (y_train < 2500).mean() * 100)
 
 # ── Baseline ──────────────────────────────────────────────────────────────────
 logger.info("=" * 60)
