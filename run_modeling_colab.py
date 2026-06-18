@@ -64,7 +64,6 @@ from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import Ridge
 from xgboost import XGBRegressor
 
-from src.data.split import load_splits
 from src.models.evaluate import evaluate_split
 from src.models.pipeline import MODEL_FEATURES, build_pipeline, get_X_y
 from src.models.train import EXPERIMENT_NAME, run_hpo, train_and_log
@@ -81,21 +80,31 @@ mlflow.set_experiment(EXPERIMENT_NAME)
 logger.info("MLflow DB   → %s", DB_URI)
 logger.info("Artifacts   → %s/mlruns", DRIVE_ROOT)
 
-# ── Load data ─────────────────────────────────────────────────────────────────
-PROCESSED_DIR = ROOT / "data" / "processed"
-logger.info("Loading splits from %s ...", PROCESSED_DIR)
-train_df, val_df, test_df = load_splits(PROCESSED_DIR)
-logger.info("Train=%d  Val=%d  Test=%d", len(train_df), len(val_df), len(test_df))
-
-X_train, y_train = get_X_y(train_df)
-X_val,   y_val   = get_X_y(val_df)
-X_test,  y_test  = get_X_y(test_df)
-
-# Free the raw DataFrames — saves ~8 GB RAM before training begins
+# ── Load data (memory-efficient — only needed columns, float32) ───────────────
+# Loading all 36 cols then extracting 21 peaks at ~12 GB.
+# Loading 21 cols directly in float32 peaks at ~2.5 GB — works on any tier.
 import gc
-del train_df, val_df, test_df
-gc.collect()
-logger.info("Raw DataFrames freed. LBW prevalence (train): %.2f%%", (y_train < 2500).mean() * 100)
+
+PROCESSED_DIR = ROOT / "data" / "processed"
+COLS_NEEDED   = MODEL_FEATURES + ["weight_grams"]
+
+def _load_split(path):
+    df = pd.read_parquet(path, columns=COLS_NEEDED, engine="pyarrow")
+    X  = df[MODEL_FEATURES].astype("float32")
+    y  = df["weight_grams"].astype("float32")
+    n  = len(df)
+    del df
+    gc.collect()
+    return X, y, n
+
+logger.info("Loading splits (float32, 21 cols only) ...")
+X_train, y_train, n_train = _load_split(PROCESSED_DIR / "train.parquet")
+logger.info("Train: %d rows x %d features", n_train, X_train.shape[1])
+X_val,   y_val,   n_val   = _load_split(PROCESSED_DIR / "val.parquet")
+logger.info("Val:   %d rows x %d features", n_val,   X_val.shape[1])
+X_test,  y_test,  n_test  = _load_split(PROCESSED_DIR / "test.parquet")
+logger.info("Test:  %d rows x %d features", n_test,  X_test.shape[1])
+logger.info("LBW prevalence (train): %.2f%%", (y_train < 2500).mean() * 100)
 
 # ── Baseline ──────────────────────────────────────────────────────────────────
 logger.info("=" * 60)
