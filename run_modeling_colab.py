@@ -46,11 +46,12 @@ try:
     logger.info("GPU: %s", gpu_info)
 except Exception:
     HAS_GPU = False
-    logger.warning("No GPU detected — falling back to CPU (training will be slower)")
+    logger.warning("No GPU detected — using CPU")
 
-LGBM_DEVICE = "gpu"  if HAS_GPU else "cpu"
-XGB_DEVICE  = "cuda" if HAS_GPU else "cpu"
-logger.info("Device  LightGBM=%s | XGBoost=%s", LGBM_DEVICE, XGB_DEVICE)
+# LightGBM pip install does not include GPU support — use all CPU cores instead.
+# XGBoost pip install includes CUDA — use GPU when available.
+XGB_DEVICE = "cuda" if HAS_GPU else "cpu"
+logger.info("LightGBM: CPU (n_jobs=-1) | XGBoost: %s", XGB_DEVICE)
 
 # ── Imports ───────────────────────────────────────────────────────────────────
 import matplotlib
@@ -127,7 +128,7 @@ X_screen, y_screen = X_train.iloc[idx], y_train.iloc[idx]
 
 for name, model, scale in [
     ("ridge_default", Ridge(alpha=1.0), True),
-    ("lgbm_default",  LGBMRegressor(n_estimators=300, random_state=42, verbose=-1, device=LGBM_DEVICE), False),
+    ("lgbm_default",  LGBMRegressor(n_estimators=300, random_state=42, verbose=-1, n_jobs=-1), False),
     ("xgb_default",   XGBRegressor(n_estimators=300, random_state=42, verbosity=0, device=XGB_DEVICE, tree_method="hist"), False),
 ]:
     m = train_and_log(
@@ -155,7 +156,7 @@ def lgbm_pipeline_fn(trial):
             colsample_bytree=trial.suggest_float("colsample_bytree", 0.6, 1.0),
             reg_alpha=trial.suggest_float("reg_alpha", 1e-4, 10.0, log=True),
             reg_lambda=trial.suggest_float("reg_lambda", 1e-4, 10.0, log=True),
-            random_state=42, verbose=-1, device=LGBM_DEVICE,
+            random_state=42, verbose=-1, n_jobs=-1,
         ),
         scale_numeric=False,
     )
@@ -203,7 +204,7 @@ logger.info("=" * 60)
 logger.info("FINAL TRAINING — best params, full dataset")
 
 lgbm_final_pipe = build_pipeline(
-    LGBMRegressor(**lgbm_best_params, random_state=42, verbose=-1, device=LGBM_DEVICE),
+    LGBMRegressor(**lgbm_best_params, random_state=42, verbose=-1, n_jobs=-1),
     scale_numeric=False,
 )
 lgbm_final = train_and_log(
