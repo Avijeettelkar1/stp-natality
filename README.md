@@ -6,8 +6,9 @@ structured around the MLOps-based Data Science process model.
 ## Current status
 
 The data, training, serving, CI, and batch-monitoring paths are implemented.
-Final real-data metrics are pending because only DVC pointer files are currently
-present; the five `newborn_data/newborn_*` raw files must be restored.
+A bounded real-data run processed 499,259 records and selected LightGBM
+(test MAE 362.8 g, R² 0.389). Raw data and generated artifacts remain excluded
+from Git.
 
 The software is a research prototype, not a medical device or diagnosis.
 
@@ -30,11 +31,11 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Restore the five DVC-tracked data files, then run:
+With the five DVC-tracked data files restored, run:
 
 ```bash
 python scripts/run_pipeline.py --nrows 100000
-python scripts/train.py --sample-size 500000
+python scripts/train.py --sample-size 0
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 

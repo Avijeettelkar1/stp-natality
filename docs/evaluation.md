@@ -12,21 +12,25 @@ The project may proceed to prototype deployment when:
 Failure to meet an aspirational clinical metric is a finding, not a reason to
 hide or repeatedly query the test set.
 
-## Required evidence
+## Evidence reviewed
 
-After real-data training, record:
+- LightGBM validation MAE: 366.6 g versus 436.6 g for the mean baseline
+  (16.0% improvement).
+- Held-out test: MAE 362.8 g, RMSE 469.7 g, R² 0.389.
+- LBW screening: sensitivity 38.6%, specificity 99.0%, precision 76.4%.
+- Sex subgroup MAE: 356.2 g for female and 369.1 g for male records.
+- LBW sensitivity: 59.3% preterm but only 1.3% term.
+- Model version `20260907153537`, data contract `natality-26-v1`.
 
-1. baseline and selected-model validation MAE;
-2. test MAE, RMSE, R², LBW sensitivity, and specificity;
-3. errors by infant sex, gestational-age band, and year;
-4. performance on term low-birth-weight cases;
-5. model version and data-contract version.
+These values come from a bounded 499,259-record real-data run, not the full
+dataset.
 
 ## Current decision
 
 **Conditional Go for software demonstration; No-Go for clinical use.**
 
-The end-to-end pipeline, deployment, and monitoring can be demonstrated while
-clearly labeling final metrics as pending. Clinical use is out of scope because
-the dataset lacks ultrasound, laboratory, placental, and longitudinal fetal
-growth measurements and has a prediction-time mismatch for gestational age.
+The model beats the agreed baseline and the end-to-end pipeline, deployment,
+and monitoring are demonstrable. Clinical use is rejected because overall LBW
+sensitivity is low, term-LBW sensitivity is effectively unusable, the dataset
+lacks important clinical measurements, and gestational age has a
+prediction-time mismatch.

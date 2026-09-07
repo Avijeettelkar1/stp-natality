@@ -5,8 +5,9 @@
 This project applies an MLOps-based Data Science process model to a newborn
 weight regression use case. Historical natality records are validated,
 prepared, split temporally, used in traceable model experiments, served through
-a tested API, and monitored for temporal input drift. Final model numbers remain
-pending until the DVC-tracked raw files are restored.
+a tested API, and monitored for temporal input drift. On a bounded
+499,259-record real-data run, LightGBM achieved a test MAE of 362.8 g and R² of
+0.389. The result supports an operational prototype but not clinical use.
 
 ## 1. Introduction
 
@@ -42,8 +43,14 @@ A temporal split separates training years before 2010, validation years
 
 Dummy mean, Ridge, and LightGBM candidates are compared by validation MAE and
 tracked in MLflow. The selected model is evaluated once on the test set using
-MAE, RMSE, R², and secondary low-birth-weight metrics. Insert verified values
-from `reports/model_metrics.json` after running the real data.
+MAE, RMSE, R², and secondary low-birth-weight metrics.
+
+The run sampled 100,000 rows from each era file. After validation, the temporal
+splits contained 299,431 training, 75,083 validation, and 124,745 test rows.
+LightGBM reduced validation MAE from the mean baseline's 436.6 g to 366.6 g
+(16.0%). Test MAE was 362.8 g, RMSE 469.7 g, and R² 0.389. LBW sensitivity was
+38.6% at 99.0% specificity. Critically, term-LBW sensitivity was only 1.3%;
+therefore, the model is unsuitable for clinical screening.
 
 ## 6. Deployment
 
@@ -55,7 +62,10 @@ environment. CI formats, lints, tests, and builds the image.
 
 The API demonstrates model use and exposes health and model metadata endpoints.
 A batch drift process compares historical training inputs with recent records.
-Retraining and rollback require human review.
+Meaningful drift (KS statistic at least 0.10 and p below 0.01) appeared in
+gestation, parental age, maternal weight gain, marital status, maternal age
+group, and the deliberately separated year variable. Retraining and rollback
+require human review.
 
 ## 8. Critical reflection
 
@@ -74,9 +84,10 @@ also not identical to gestational age known at an earlier examination.
 ## 9. Conclusion
 
 The deliverable is an honest operational prototype and a reproducible study,
-not a clinically validated system. Final conclusions about predictive
-performance must be added only after the tracked data is restored and the
-workflow is rerun.
+not a clinically validated system. The model improves materially over the
+baseline, but poor LBW sensitivity—especially among term births—prevents a
+clinical Go decision. Future work requires richer prenatal measurements and a
+prospectively valid prediction time.
 
 ## References
 

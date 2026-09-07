@@ -1,15 +1,16 @@
 # Phase 3 Findings
 
-This file intentionally contains no model-performance claims yet.
+The clean bounded run used only fields from the provided 26-column schema.
+LightGBM improved validation MAE by 16.0% over the mean baseline and achieved
+362.8 g MAE and R² 0.389 on the held-out test split.
 
-The previous version mixed the provided 26-column schema with fields from a
-different natality dataset. Its metrics and causal explanations are therefore
-not accepted as project evidence.
+The overall LBW sensitivity of 38.6% is too low for clinical screening. The
+subgroup split explains the practical danger: sensitivity was 59.3% for preterm
+births but only 1.3% for term births. The model identifies some low weights
+associated with prematurity but almost entirely misses low-weight term births.
 
-After a clean run, summarize:
-
-1. validation comparison against the mean baseline;
-2. final held-out regression and LBW threshold metrics;
-3. subgroup and temporal behavior;
-4. feature importance computed from the selected model;
-5. observed data limitations without claiming irreducible causality.
+This supports a Conditional-Go for an educational software demonstration and a
+No-Go for clinical use. The evidence does not prove that the remaining error is
+irreducible; it shows only that this model and administrative feature set are
+insufficient. Ultrasound, longitudinal growth, laboratory, and maternal disease
+measurements are reasonable candidates for future investigation.

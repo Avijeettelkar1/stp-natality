@@ -14,8 +14,9 @@ def compare_batches(
     current: pd.DataFrame,
     features: list[str],
     alpha: float = 0.01,
+    minimum_ks: float = 0.1,
 ) -> dict:
-    """Compare numeric feature distributions with a two-sample KS test."""
+    """Compare distributions using significance and a practical-effect threshold."""
     feature_results = {}
     for feature in features:
         reference_values = reference[feature].dropna()
@@ -28,8 +29,9 @@ def compare_batches(
             }
             continue
         statistic, p_value = ks_2samp(reference_values, current_values)
+        drift_detected = p_value < alpha and statistic >= minimum_ks
         feature_results[feature] = {
-            "status": "drift_detected" if p_value < alpha else "no_drift_detected",
+            "status": "drift_detected" if drift_detected else "no_drift_detected",
             "ks_statistic": round(float(statistic), 6),
             "p_value": round(float(p_value), 8),
         }
@@ -42,6 +44,7 @@ def compare_batches(
     return {
         "method": "two_sample_kolmogorov_smirnov",
         "alpha": alpha,
+        "minimum_ks": minimum_ks,
         "drift_detected": bool(detected),
         "drifted_features": detected,
         "features": feature_results,

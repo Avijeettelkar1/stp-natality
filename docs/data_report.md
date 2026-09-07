@@ -8,6 +8,11 @@
 
 ---
 
+> **Verification scope:** The executable pipeline was rerun on 100,000 rows per
+> era file. It produced 499,259 valid records, and all 66 data-validation tests
+> passed. Full-dataset descriptive counts below originate from earlier analysis
+> and should be rerun before treating them as final publication evidence.
+
 ## 1. Data Provenance
 
 ### 1.1 Dataset Overview

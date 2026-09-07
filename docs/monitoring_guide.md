@@ -12,7 +12,9 @@ python scripts/monitor_drift.py
 ```
 
 The report compares training and recent test distributions with two-sample
-Kolmogorov-Smirnov tests and writes `reports/drift_report.json`.
+Kolmogorov-Smirnov tests and writes `reports/drift_report.json`. A feature is
+flagged only when `p < 0.01` and the KS statistic is at least `0.10`, avoiding
+alerts for statistically significant but negligible shifts in this large sample.
 
 ## What to monitor
 
