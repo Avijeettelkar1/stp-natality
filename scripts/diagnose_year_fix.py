@@ -1,6 +1,7 @@
 """Inspect raw file structure to understand the actual schema."""
 
 from pathlib import Path
+
 import pandas as pd
 
 for fname in ["newborn_1986", "newborn_2010"]:

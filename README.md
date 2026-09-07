@@ -1,194 +1,71 @@
-# 🍼 Development and Operationalization of Data Science Solutions
-## Weight Analysis of Newborns
+# STP Natality
 
-> **Institute:** Institut für Technische und Betriebliche Informationssysteme  
-> **Advisors:** Prof. Dr. Klaus Turowski, M. Sc. Christian Haertel  
-> **Team Size:** 4 members | **Duration:** 5 months  
-> **Knowledge Required:** Python, Data Analysis, Data Engineering, Machine Learning, Software Engineering, Technical Writing
+End-to-end university Data Science project for newborn-weight prediction,
+structured around the MLOps-based Data Science process model.
 
----
+## Current status
 
-## 📋 Project Overview
+The data, training, serving, CI, and batch-monitoring paths are implemented.
+Final real-data metrics are pending because only DVC pointer files are currently
+present; the five `newborn_data/newborn_*` raw files must be restored.
 
-This project implements an **end-to-end Data Science (DS) and MLOps solution** to predict the birth weight of newborns using historical natality data. The prediction system is intended to assist healthcare providers — particularly during routine prenatal examinations — in identifying potential health risks such as underweight or overweight newborns.
+The software is a research prototype, not a medical device or diagnosis.
 
-The project follows an **MLOps-based DS process model**, covering the full lifecycle from business understanding through data engineering, modeling, deployment, and production monitoring.
+## Lifecycle and artifacts
 
----
+| Stage | Main artifacts |
+|---|---|
+| Business Understanding | `docs/business_understanding.md` |
+| Data Collection, Exploration, Preparation | `src/data/`, notebooks 02–03, `docs/data_report.md` |
+| Analysis | `src/models/`, `scripts/train.py`, notebook 04 |
+| Evaluation | `docs/evaluation.md`, `reports/model_metrics.json` after training |
+| Deployment | `src/api/`, `deployment/Dockerfile`, `docker-compose.yml` |
+| Utilization | `src/monitoring/`, `scripts/monitor_drift.py` |
 
-## 🎯 Project Goal
+## Setup
 
-> **Predict the birth weight of newborns** based on historical data to help doctors proactively identify and respond to potential health issues.
-
-**Primary ML Task:** Regression (continuous target: birth weight in grams)  
-**Success Metric:** Model achieves clinically meaningful accuracy (e.g., MAE < 300g) with a deployable, monitored production system.
-
----
-
-## 🗂️ Directory Structure
-
-```
-STP Natality/
-│
-├── README.md                          # ← You are here: Project overview
-├── checklist.md                       # End-to-end MLOps project checklist
-│
-├── data/
-│   ├── raw/                           # Raw unprocessed dataset (as received)
-│   ├── processed/                     # Cleaned and feature-engineered data
-│   └── external/                      # Any supplementary or reference data
-│
-├── notebooks/
-│   ├── 01_business_understanding.ipynb
-│   ├── 02_data_exploration.ipynb
-│   ├── 03_data_preparation.ipynb
-│   ├── 04_modeling.ipynb
-│   ├── 05_evaluation.ipynb
-│   └── 06_monitoring_analysis.ipynb
-│
-├── src/
-│   ├── data/                          # Data ingestion & preprocessing scripts
-│   ├── features/                      # Feature engineering pipeline
-│   ├── models/                        # Model training, evaluation, registry
-│   ├── api/                           # FastAPI prediction service
-│   └── monitoring/                    # Drift detection & monitoring scripts
-│
-├── models/                            # Serialized model artifacts (tracked by DVC/MLflow)
-│
-├── tests/
-│   ├── unit/                          # Unit tests for src/ modules
-│   ├── integration/                   # Integration tests for the API
-│   └── data_validation/              # Great Expectations / data quality tests
-│
-├── deployment/
-│   ├── Dockerfile                     # Container definition for prediction service
-│   ├── docker-compose.yml             # Multi-service orchestration (API + monitoring)
-│   └── ci_cd/                         # GitHub Actions / CI-CD pipeline configs
-│
-├── monitoring/
-│   ├── dashboards/                    # Grafana dashboard definitions
-│   └── alerts/                        # Alert rules and thresholds
-│
-├── docs/
-│   ├── project_plan.md               # Detailed project plan, timeline & roles
-│   ├── business_understanding.md     # Business problem formulation
-│   ├── data_report.md                # Data exploration & quality report
-│   ├── modeling_report.md            # Model selection, training & evaluation report
-│   ├── deployment_guide.md           # Deployment architecture & runbook
-│   ├── monitoring_guide.md           # Monitoring setup and maintenance guide
-│   ├── final_report.md               # Comprehensive scientific final report
-│   └── diagrams/                     # Architecture and workflow diagrams (draw.io / PlantUML)
-│
-├── mlruns/                            # MLflow experiment tracking (auto-generated)
-├── .dvc/                              # DVC configuration for data versioning
-├── .github/workflows/                 # CI/CD pipeline definitions
-├── requirements.txt                   # Python dependencies
-├── environment.yml                    # Conda environment specification
-└── .gitignore
-```
-
----
-
-## 🔄 MLOps Process Model Phases
-
-The project follows a structured MLOps lifecycle, as tracked in [checklist.md](./checklist.md):
-
-| # | Phase | Key Deliverable |
-|---|-------|----------------|
-| 1 | **Business Understanding** | Problem statement, KPIs, feasibility analysis |
-| 2 | **Data Engineering** | Clean dataset, feature pipeline, data validation |
-| 3 | **Modeling** | Trained & evaluated ML models, MLflow experiment logs |
-| 4 | **Evaluation** | Business-aligned model assessment, sign-off |
-| 5 | **Deployment** | Dockerized API, CI/CD pipeline, integration tests |
-| 6 | **Utilization & Monitoring** | Monitoring dashboards, drift alerts, retraining triggers |
-| 7 | **Documentation & Reflection** | Final scientific report, architectural diagrams |
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Language | Python 3.11+ |
-| Data Processing | Pandas, NumPy, Polars |
-| EDA & Visualization | Matplotlib, Seaborn, Plotly |
-| ML Frameworks | Scikit-learn, XGBoost, LightGBM |
-| Experiment Tracking | MLflow |
-| Data Versioning | DVC |
-| Data Validation | Great Expectations |
-| API / Serving | FastAPI + Uvicorn |
-| Containerization | Docker, Docker Compose |
-| CI/CD | GitHub Actions |
-| Monitoring | Evidently AI, Prometheus, Grafana |
-| Version Control | Git + GitHub |
-
----
-
-## 🚀 Quickstart
-
-### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd "STP Natality"
-```
-
-### 2. Set Up the Python Environment
-```bash
-# Using conda
-conda env create -f environment.yml
-conda activate stp-natality
-
-# Or using pip
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Initialize DVC (Data Versioning)
+Restore the five DVC-tracked data files, then run:
+
 ```bash
-dvc init
-dvc pull   # Pull data from remote storage (configure remote first)
+python scripts/run_pipeline.py --nrows 100000
+python scripts/train.py --sample-size 500000
+mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
-### 4. Start MLflow Tracking Server
+Remove the row limit for the final data pipeline. Use `--sample-size 0` only
+when the machine can train on the full split.
+
+## Serve and monitor
+
 ```bash
-mlflow ui --port 5000
+uvicorn src.api.main:app --reload
+python scripts/monitor_drift.py
 ```
 
-### 5. Run the Prediction API
+Or start the API container:
+
 ```bash
-cd src/api
-uvicorn main:app --reload --port 8000
+docker compose up --build
 ```
 
-### 6. Run Tests
+Swagger UI is available at `http://localhost:8000/docs`.
+
+## Quality checks
+
 ```bash
-pytest tests/
+pip install -r requirements-ci.txt
+pytest tests/ --cov=src
+black --check src scripts tests
+isort --check-only src scripts tests
+flake8 src scripts tests --max-line-length=88
 ```
 
----
-
-## 📚 Documentation Index
-
-| Document | Description |
-|----------|-------------|
-| [checklist.md](./checklist.md) | Full end-to-end MLOps project checklist |
-| [docs/project_plan.md](./docs/project_plan.md) | Timeline, milestones, roles & responsibilities |
-| [docs/business_understanding.md](./docs/business_understanding.md) | Business problem formulation |
-| [docs/data_report.md](./docs/data_report.md) | Data exploration and quality report |
-| [docs/modeling_report.md](./docs/modeling_report.md) | Modeling decisions and results |
-| [docs/deployment_guide.md](./docs/deployment_guide.md) | Deployment architecture and runbook |
-| [docs/final_report.md](./docs/final_report.md) | Final scientific report |
-
----
-
-## 👥 Team
-
-| Role | Responsibilities |
-|------|----------------|
-| **Project Manager / DS Translator** | Planning, coordination, business alignment, documentation |
-| **Data Engineer** | Data ingestion, preprocessing, pipeline, validation |
-| **Machine Learning Engineer** | Modeling, experiment tracking, evaluation |
-| **MLOps / DevOps Engineer** | Deployment, CI/CD, monitoring, infrastructure |
-
----
-
-*Last updated: May 2026*
+See [`docs/final_report.md`](docs/final_report.md) and
+[`docs/architecture.md`](docs/architecture.md) for the scientific narrative and
+system design.

@@ -15,6 +15,8 @@ from typing import Optional
 
 import pandas as pd
 
+from src.data.schema import RAW_COLUMNS, validate_raw_columns
+
 logger = logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
@@ -31,73 +33,10 @@ NATALITY_FILES = {
     "newborn_2018": 2018,
 }
 
-# The 26 columns in the shared schema (in order)
-COLUMN_NAMES = [
-    "source_year",  # year group label (added by us; not in raw file)
-    "year_fix",  # actual 4-digit year of birth
-    "month",  # month of birth (1–12)
-    "day",  # day of birth (1–31)
-    "weight_pounds",  # TARGET: birth weight in pounds
-    "plurality",  # number of children born (1=singleton, 2=twins …)
-    "is_male",  # bool: TRUE if child is male
-    "apgar_1min",  # LEAKAGE — Apgar score at 1 minute (post-birth)
-    "apgar_5min",  # LEAKAGE — Apgar score at 5 minutes (post-birth)
-    "state",  # state of birth (postal code)
-    "mother_residence_state",  # mother's state of residence
-    "mother_birth_state",  # mother's state of birth
-    "mother_age",  # mother's age at birth
-    "mother_married",  # bool: TRUE if married
-    "gestation_weeks",  # pregnancy duration in weeks
-    "lmp",  # last menstrual period (MMDDYYYY; 99/9999=unknown)
-    "weight_gain_pounds",  # maternal weight gain during pregnancy
-    "cigarette_use",  # bool: smoked during pregnancy (2020+ only)
-    "cigarettes_per_day",  # cigarettes/day (2020+ only)
-    "alcohol_use",  # bool: alcohol use (2006+ only)
-    "drinks_per_week",  # drinks/week (2006+ only)
-    "born_alive_alive",  # prior children still living
-    "born_alive_dead",  # prior children who have died
-    "born_dead",  # prior stillbirths
-    "ever_born",  # total children ever born (including current)
-    "father_age",  # father's age at birth
-    "record_weight",  # 1=full-reporting; 2=50% sample
-]
-
-# Actual raw columns (the file doesn't include 'source_year', we add it)
-RAW_COLUMN_NAMES = COLUMN_NAMES[1:]  # everything except our added 'source_year'
-
-# Columns in the files that we want to keep (same as RAW_COLUMN_NAMES, used
-# for filtering after reading with header=0 which gives us the actual column
-# names from the file).
-# Note: actual file header has 26 columns in a *different* order than COLUMN_NAMES.
-# We read with header=0 to get the file's own column names, then select/reorder.
-FILE_COLUMNS = [
-    "year_fix",
-    "month",
-    "day",
-    "weight_pounds",
-    "plurality",
-    "is_male",
-    "apgar_1min",
-    "apgar_5min",
-    "state",
-    "mother_residence_state",
-    "mother_birth_state",
-    "mother_age",
-    "mother_married",
-    "gestation_weeks",
-    "lmp",
-    "weight_gain_pounds",
-    "cigarette_use",
-    "cigarettes_per_day",
-    "alcohol_use",
-    "drinks_per_week",
-    "born_alive_alive",
-    "born_alive_dead",
-    "born_dead",
-    "ever_born",
-    "father_age",
-    "record_weight",
-]
+# Compatibility aliases. The source of truth is ``src.data.schema.RAW_COLUMNS``.
+FILE_COLUMNS = RAW_COLUMNS
+COLUMN_NAMES = ["source_year", *RAW_COLUMNS]
+RAW_COLUMN_NAMES = RAW_COLUMNS
 
 
 # ── Core Functions ─────────────────────────────────────────────────────────────
@@ -151,12 +90,9 @@ def load_single_file(
         on_bad_lines="warn",
     )
 
-    # Select only the 26 known schema columns (guards against unexpected extra cols)
-    available = [c for c in FILE_COLUMNS if c in df.columns]
-    missing = [c for c in FILE_COLUMNS if c not in df.columns]
-    if missing:
-        logger.warning("Columns not found in %s: %s", filepath.name, missing)
-    df = df[available].copy()
+    # Fail early rather than silently training different feature sets per era.
+    validate_raw_columns(df.columns.tolist())
+    df = df[FILE_COLUMNS].copy()
 
     # Add traceability column
     df.insert(0, "source_year", era_year)

@@ -136,3 +136,42 @@ def evaluate_split(
             logger.warning("MLflow metric logging skipped: %s", exc)
 
     return combined
+
+
+def evaluate_subgroups(
+    pipeline,
+    X: pd.DataFrame,
+    y: pd.Series,
+    minimum_rows: int = 30,
+) -> dict:
+    """Measure errors across prespecified demographic and temporal groups."""
+    predictions = pd.Series(pipeline.predict(X), index=X.index)
+    groupings = {
+        "sex": X["is_male"].map({0.0: "female", 1.0: "male"}),
+        "gestation_band": pd.cut(
+            X["gestation_weeks"],
+            bins=[19, 36, 41, 44],
+            labels=["preterm", "term", "post_term"],
+        ),
+        "year_band": pd.cut(
+            X["year_fix"],
+            bins=[1985, 1999, 2009, 2015, 2100],
+            labels=["1986_1999", "2000_2009", "2010_2015", "2016_plus"],
+        ),
+    }
+    result = {}
+    for grouping_name, groups in groupings.items():
+        result[grouping_name] = {}
+        for group_value in groups.dropna().unique():
+            mask = groups == group_value
+            if int(mask.sum()) < minimum_rows:
+                continue
+            regression = compute_regression_metrics(y[mask], predictions[mask])
+            clinical = compute_clinical_metrics(y[mask], predictions[mask])
+            result[grouping_name][str(group_value)] = {
+                "n": int(mask.sum()),
+                **regression,
+                "lbw_sensitivity": clinical["sensitivity"],
+                "lbw_specificity": clinical["specificity"],
+            }
+    return result

@@ -19,10 +19,14 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data.ingest import load_all_files, get_data_summary
-from src.data.preprocess import run_preprocessing
-from src.data.feature_engineering import engineer_features
-from src.data.split import temporal_split, save_splits, get_feature_columns
+from src.data.feature_engineering import engineer_features  # noqa: E402
+from src.data.ingest import get_data_summary, load_all_files  # noqa: E402
+from src.data.preprocess import run_preprocessing  # noqa: E402
+from src.data.split import (  # noqa: E402
+    get_feature_columns,
+    save_splits,
+    temporal_split,
+)
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -33,15 +37,17 @@ logging.basicConfig(
 logger = logging.getLogger("pipeline")
 
 
-def main(nrows_per_file: int | None = None) -> None:
-    RAW_DATA_DIR = PROJECT_ROOT / "newborn_data"
-    OUT_DIR = PROJECT_ROOT / "data" / "processed"
+def main(
+    nrows_per_file: int | None = None,
+    raw_data_dir: Path = PROJECT_ROOT / "newborn_data",
+    out_dir: Path = PROJECT_ROOT / "data" / "processed",
+) -> None:
 
     logger.info("=" * 60)
     logger.info("STP Natality — Phase 2 Data Pipeline")
     logger.info("=" * 60)
-    logger.info("Raw data dir : %s", RAW_DATA_DIR)
-    logger.info("Output dir   : %s", OUT_DIR)
+    logger.info("Raw data dir : %s", raw_data_dir)
+    logger.info("Output dir   : %s", out_dir)
     logger.info("Rows per file: %s", nrows_per_file if nrows_per_file else "ALL")
 
     t_start = time.time()
@@ -49,7 +55,7 @@ def main(nrows_per_file: int | None = None) -> None:
     # ── Step 1: Ingestion ──────────────────────────────────────────────────────
     logger.info("\n--- Step 1: Ingestion ---")
     t0 = time.time()
-    df_raw = load_all_files(data_dir=RAW_DATA_DIR, nrows_per_file=nrows_per_file)
+    df_raw = load_all_files(data_dir=raw_data_dir, nrows_per_file=nrows_per_file)
     summary = get_data_summary(df_raw)
     logger.info(
         "Loaded %d rows × %d cols (%.1f MB) in %.1fs",
@@ -91,7 +97,7 @@ def main(nrows_per_file: int | None = None) -> None:
     # ── Step 5: Save Splits ───────────────────────────────────────────────────
     logger.info("\n--- Step 5: Saving Parquet Splits ---")
     t0 = time.time()
-    save_splits(train, val, test, out_dir=OUT_DIR)
+    save_splits(train, val, test, out_dir=out_dir)
     logger.info("Saved in %.1fs", time.time() - t0)
 
     # ── Summary ───────────────────────────────────────────────────────────────
@@ -113,5 +119,19 @@ if __name__ == "__main__":
         default=None,
         help="Rows per file to load (None=full dataset)",
     )
+    parser.add_argument(
+        "--raw-data-dir",
+        type=Path,
+        default=PROJECT_ROOT / "newborn_data",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=PROJECT_ROOT / "data" / "processed",
+    )
     args = parser.parse_args()
-    main(nrows_per_file=args.nrows)
+    main(
+        nrows_per_file=args.nrows,
+        raw_data_dir=args.raw_data_dir,
+        out_dir=args.out_dir,
+    )

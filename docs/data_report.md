@@ -16,7 +16,7 @@
 |----------|-------|
 | **Dataset Name** | US Natality Data (Historical) |
 | **Source** | US National Center for Health Statistics (NCHS) — Natality Public Use Files |
-| **Format** | CSV (headerless, comma-separated, no file extension) |
+| **Format** | CSV with a header row (comma-separated, no file extension) |
 | **Files** | 5 (one per year-era: 1986, 1994, 2002, 2010, 2018) |
 | **Total Records** | **26,968,935** (across all 5 files) |
 | **Total Columns** | 26 (shared schema across all files) |
@@ -164,7 +164,7 @@ Implemented in [`src/data/preprocess.py`](../src/data/preprocess.py). Steps appl
 | **1. Drop leakage columns** | `drop_leakage_columns` | Remove `apgar_1min`, `apgar_5min` (post-birth), `day` (no predictive value) |
 | **2. Cast booleans** | `cast_booleans` | Convert `"true"`/`"false"` strings to Int8 (0/1) — consistent encoding |
 | **3. Handle sentinels** | `handle_missing_values` | `father_age=99`, `gestation_weeks=99`, `lmp∈{"99","9999"}` → NaN |
-| **4. Cap outliers** | `cap_outliers` | `gestation_weeks`: clip to [20, 44]; `mother_age`: clip to [10, 60]; flag weight outliers with `outlier_weight` column |
+| **4. Handle invalid ranges** | `cap_outliers` | Values outside gestation [20, 44] or maternal age [10, 60] become missing; negative weight gain becomes missing; target outliers are flagged |
 | **5. Convert target** | `convert_target` | Add `weight_grams = weight_pounds × 453.592` — grams are the clinical standard |
 | **6. Drop null targets** | `drop_null_targets` | Remove rows where `weight_pounds` is NaN or outside [0.66, 15.43] lbs (≈ [300, 7000] g) |
 

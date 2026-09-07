@@ -101,6 +101,15 @@ def test_load_single_file_drops_unknown_extra_columns(tmp_path):
     assert "mystery_col" not in result.columns
 
 
+def test_load_single_file_rejects_missing_schema_column(tmp_path):
+    f = tmp_path / "sample.csv"
+    header = ",".join(FILE_COLUMNS[:-1])
+    row = ",".join(_ROW_VALUES[:-1])
+    f.write_text(header + "\n" + row, encoding="utf-8")
+    with pytest.raises(ValueError, match="Missing columns"):
+        load_single_file(f, era_year=2000)
+
+
 def test_load_single_file_raises_for_missing_file(tmp_path):
     with pytest.raises(FileNotFoundError):
         load_single_file(tmp_path / "nonexistent.csv", era_year=2000)

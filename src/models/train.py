@@ -78,7 +78,7 @@ def train_and_log(
 
         mlflow.sklearn.log_model(
             pipeline,
-            name="model",
+            artifact_path="model",
             serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_PICKLE,
         )
         run_id = run.info.run_id
