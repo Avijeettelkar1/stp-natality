@@ -23,20 +23,22 @@ The software is a research prototype, not a medical device or diagnosis.
 | Deployment | `src/api/`, `deployment/Dockerfile`, `docker-compose.yml` |
 | Utilization | `src/monitoring/`, `scripts/monitor_drift.py` |
 
-## Setup
+## Setup (uv)
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+Install [uv](https://docs.astral.sh/uv/) if needed, then from the repo root:
+
+```powershell
+uv sync --extra dev
 ```
+
+That creates `.venv` and installs the project plus test and notebook tools.
 
 With the five DVC-tracked data files restored, run:
 
-```bash
-python scripts/run_pipeline.py --nrows 100000
-python scripts/train.py --sample-size 0
-mlflow ui --backend-store-uri sqlite:///mlflow.db
+```powershell
+uv run python scripts/run_pipeline.py --nrows 100000
+uv run python scripts/train.py --sample-size 0
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
 Remove the row limit for the final data pipeline. Use `--sample-size 0` only
@@ -44,14 +46,14 @@ when the machine can train on the full split.
 
 ## Serve and monitor
 
-```bash
-uvicorn src.api.main:app --reload
-python scripts/monitor_drift.py
+```powershell
+uv run uvicorn src.api.main:app --reload --port 8000
+uv run python scripts/monitor_drift.py
 ```
 
 Or start the API container:
 
-```bash
+```powershell
 docker compose up --build
 ```
 
@@ -59,12 +61,12 @@ Swagger UI is available at `http://localhost:8000/docs`.
 
 ## Quality checks
 
-```bash
-pip install -r requirements-ci.txt
-pytest tests/ --cov=src
-black --check src scripts tests
-isort --check-only src scripts tests
-flake8 src scripts tests --max-line-length=88
+```powershell
+uv sync --extra ci
+uv run pytest tests/ --cov=src
+uv run black --check src scripts tests
+uv run isort --check-only src scripts tests
+uv run flake8 src scripts tests --max-line-length=88
 ```
 
 See [`docs/final_report.md`](docs/final_report.md) and

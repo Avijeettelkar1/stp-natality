@@ -3,13 +3,13 @@
 ## Prerequisite
 
 Generate `models/birth_weight_pipeline.joblib` and
-`models/model_metadata.json` with `python scripts/train.py`. The model files are
+`models/model_metadata.json` with `uv run python scripts/train.py`. The model files are
 intentionally excluded from Git.
 
 ## Local service
 
-```bash
-uvicorn src.api.main:app --reload
+```powershell
+uv run uvicorn src.api.main:app --reload --port 8000
 ```
 
 Open `http://localhost:8000/docs`. `GET /health` reports whether the model is
