@@ -2,9 +2,11 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ develop ]
   pull_request:
     branches: [ main, develop ]
+  # On main, CI runs as the first stage of the CD pipeline (cd.yml).
+  workflow_call:
 
 jobs:
   lint-and-test:
@@ -35,8 +37,28 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing
 
+      - name: Create test model for the image build
+        run: uv run python scripts/make_test_model.py models
+
       - name: Build serving image
-        run: docker build -f deployment/Dockerfile -t stp-natality-api:test .
+        run: docker build -f deployment/Dockerfile --build-arg GIT_SHA=${{ github.sha }} -t stp-natality-api:test .
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name api -p 8000:8000 stp-natality-api:test
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health | grep -q '"model_ready":true'; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8000/health
+          curl -fsS http://localhost:8000/ -o /dev/null
+          curl -fsS -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"gestation_weeks": 39, "mother_age": 29, "plurality": 1, "year_fix": 2026, "month": 10, "is_male": true}'
+
+      - name: Container logs
+        if: always()
+        run: docker logs api || true
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v4

@@ -1,0 +1,44 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Full commit SHA of the image to redeploy (see the Packages page)"
+        required: true
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Redeploy an earlier image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy the selected image to Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          TAG: ${{ inputs.commit_sha }}
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          IMG_URL=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$IMAGE:$TAG")
+          curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}&imgURL=${IMG_URL}"
+
+      - name: Wait for the selected version to go live
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          TAG: ${{ inputs.commit_sha }}
+        run: |
+          for i in $(seq 1 40); do
+            BODY=$(curl -s --max-time 30 "$APP_URL/health" || true)
+            echo "Attempt $i: $BODY"
+            if echo "$BODY" | grep -q "\"version\":\"$TAG\""; then
+              echo "Rolled back to $TAG."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::Rollback to $TAG did not go live within 10 minutes."
+          exit 1

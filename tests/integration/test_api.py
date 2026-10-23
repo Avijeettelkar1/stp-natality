@@ -33,6 +33,7 @@ def test_health_reports_model_state():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["model_ready"] is model_service.ready
+    assert response.json()["version"]
 
 
 def test_predict_returns_valid_contract(monkeypatch):

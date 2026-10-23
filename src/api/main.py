@@ -1,5 +1,6 @@
 """FastAPI application serving the selected birth-weight model."""
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -59,6 +60,7 @@ def health() -> HealthResponse:
     return HealthResponse(
         status="ready" if model_service.ready else "model_unavailable",
         model_ready=model_service.ready,
+        version=os.getenv("GIT_SHA", "local"),
     )
 
 
