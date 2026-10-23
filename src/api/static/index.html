@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Birth weight estimate | STP Natality</title>
+  <link rel="icon" href="/static/favicon.png">
+  <style>
+    :root {
+      --paper: #f6f8fa;
+      --panel: #e8eef3;
+      --ink: #13263a;
+      --muted: #586a7b;
+      --line: #d0dae3;
+      --field: #ffffff;
+      --accent: #2d5c8a;
+      --accent-ink: #ffffff;
+      --focus: #3f7fbf;
+      --error: #a8322b;
+      --zone-low: #dfa23c;
+      --zone-typical: #5e9f88;
+      --zone-high: #8a6ab0;
+      --curve: #9fb1c2;
+      --notice-bg: #fbefd6;
+      --notice-ink: #6a4700;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #10181f;
+        --panel: #172430;
+        --ink: #e3ebf2;
+        --muted: #9badbd;
+        --line: #2c3c4a;
+        --field: #1b2a37;
+        --accent: #6aa3d8;
+        --accent-ink: #0c141b;
+        --focus: #9cc6ee;
+        --error: #f2908a;
+        --zone-low: #c6902f;
+        --zone-typical: #4c8a74;
+        --zone-high: #7a5e9e;
+        --curve: #4d6275;
+        --notice-bg: #3a2e13;
+        --notice-ink: #f3d48f;
+        color-scheme: dark;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    .app { display: grid; grid-template-columns: minmax(380px, 46%) 1fr; min-height: 100vh; }
+
+    /* Reading pane */
+    .reading {
+      position: sticky; top: 0; height: 100vh;
+      background: var(--panel);
+      display: flex; flex-direction: column;
+      padding: 44px 48px 32px;
+    }
+    .reading h1 {
+      margin: 0; font-size: 1.75rem; line-height: 1.2; font-weight: 650;
+      font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+      letter-spacing: -0.01em;
+    }
+    .lede { margin: 8px 0 0; color: var(--muted); max-width: 46ch; }
+
+    .estimate { margin-top: auto; padding-top: 32px; }
+    .figure { display: flex; align-items: baseline; gap: 10px; min-height: 5.4rem; }
+    .grams {
+      font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+      font-size: clamp(3.4rem, 7vw, 5.2rem); line-height: 1; font-weight: 650;
+      letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+    }
+    .prompt { margin: 0; align-self: flex-end; color: var(--muted); font-size: 1.05rem; max-width: 40ch; }
+    .unit { font-size: 1.4rem; color: var(--muted); }
+    .secondary { margin: 6px 0 0; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.5em; }
+    .category { display: flex; align-items: center; gap: 10px; margin: 18px 0 0; font-weight: 600; min-height: 1.5em; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--curve); flex: none; }
+
+    .chart { margin-top: 22px; }
+    .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .chart .axis text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .chart .baseline { stroke: var(--line); stroke-width: 1; }
+    .chart .outline { fill: none; stroke: var(--curve); stroke-width: 1.5; }
+    #marker { transition: transform 0.45s cubic-bezier(.2,.7,.2,1); }
+    #marker line { stroke: var(--ink); stroke-width: 2; }
+    #marker path { fill: var(--ink); }
+    .caption { margin: 10px 0 0; font-size: 0.82rem; color: var(--muted); }
+
+    .meta { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--muted); }
+    .meta p { margin: 0 0 4px; }
+
+    .notice { background: var(--notice-bg); color: var(--notice-ink); border-radius: 8px; padding: 10px 14px; margin: 16px 0 0; font-size: 0.92rem; }
+
+    /* Form pane */
+    .entry { padding: 44px 48px 64px; max-width: 720px; }
+    form { margin: 0; }
+    fieldset { border: 0; margin: 0 0 30px; padding: 0; min-width: 0; }
+    legend { float: left; width: 100%; padding: 0 0 6px; margin-bottom: 14px; font-weight: 650; font-size: 1.1rem; border-bottom: 1px solid var(--line); }
+    legend + * { clear: both; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
+    .wide { grid-column: 1 / -1; }
+
+    .field > label, .field > .label { display: block; font-weight: 550; font-size: 0.94rem; margin-bottom: 6px; }
+    .optional { font-weight: 400; color: var(--muted); }
+    .hint { display: block; font-size: 0.82rem; color: var(--muted); margin-top: 5px; }
+    .error { display: block; color: var(--error); font-size: 0.85rem; margin-top: 5px; }
+    .error:empty { display: none; }
+
+    input[type="number"], select {
+      width: 100%; height: 44px; padding: 0 12px; font: inherit; font-variant-numeric: tabular-nums;
+      color: var(--ink); background: var(--field);
+      border: 1px solid var(--line); border-radius: 8px;
+      transition: border-color 0.15s;
+    }
+    input[type="number"]:hover, select:hover { border-color: var(--muted); }
+    input[aria-invalid="true"] { border-color: var(--error); }
+
+    .segmented { display: flex; border: 1px solid var(--line); border-radius: 8px; background: var(--field); padding: 3px; gap: 3px; }
+    .segmented label { flex: 1; position: relative; }
+    .segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .segmented span {
+      display: block; text-align: center; padding: 8px 6px; border-radius: 6px;
+      color: var(--muted); font-weight: 500; transition: background 0.15s, color 0.15s;
+    }
+    .segmented input:checked + span { background: var(--accent); color: var(--accent-ink); }
+    .segmented input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 1px; }
+    .segmented.invalid { border-color: var(--error); }
+
+    .field > label.check { font-weight: 400; margin: 0; }
+    .check { display: inline-flex; align-items: center; gap: 10px; height: 44px; font-weight: 400; cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+    .actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    button {
+      font: inherit; font-weight: 600; height: 48px; padding: 0 28px; border-radius: 8px; cursor: pointer;
+      background: var(--accent); color: var(--accent-ink); border: 0;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+    .status { color: var(--muted); font-size: 0.92rem; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .reading { position: static; height: auto; padding: 28px 22px 24px; }
+      .estimate { margin-top: 20px; padding-top: 0; }
+      .figure { min-height: 0; }
+      .entry { padding: 28px 22px 48px; }
+    }
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #marker, .segmented span, input, select { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="reading" aria-live="polite">
+      <h1>Birth weight estimate</h1>
+      <p class="lede">An estimate of the baby's weight at birth, from what is known late in pregnancy or at admission for delivery.</p>
+
+      <div id="notice-slot"></div>
+
+      <div class="estimate">
+        <div class="figure">
+          <p class="prompt" id="prompt">Fill in the form and select Estimate weight. The estimate appears here and moves along the curve as you change the inputs.</p>
+          <span class="grams" id="grams" hidden></span>
+          <span class="unit" id="unit" hidden>g</span>
+        </div>
+        <p class="secondary" id="imperial"></p>
+        <p class="category" id="category-row" hidden><span class="dot" id="category-dot"></span><span id="category"></span></p>
+
+        <div class="chart">
+          <svg id="chart" viewBox="0 0 400 168" role="img" aria-label="Distribution of birth weights in the study data, with the estimate marked">
+            <g id="zones"></g>
+            <path class="outline" id="outline"></path>
+            <line class="baseline" x1="0" y1="140" x2="400" y2="140"></line>
+            <g class="axis" id="axis"></g>
+            <g id="marker" style="opacity:0">
+              <line x1="0" y1="8" x2="0" y2="140"></line>
+              <path d="M -6 0 L 6 0 L 0 8 Z"></path>
+            </g>
+          </svg>
+          <p class="caption">Curve: birth weights in the study data (mean 3,368 g). Below 2,500 g is low birth weight; above 4,000 g is high.</p>
+        </div>
+      </div>
+
+      <div class="meta">
+        <p id="model-line">Checking the prediction service...</p>
+        <p>Research prototype. Not for clinical decisions.</p>
+      </div>
+    </section>
+
+    <main class="entry">
+      <form id="predict-form" novalidate>
+        <fieldset>
+          <legend>Pregnancy</legend>
+          <div class="grid">
+            <div class="field">
+              <label for="gestation_weeks">Gestation at delivery (weeks)</label>
+              <input id="gestation_weeks" name="gestation_weeks" type="number" min="20" max="44" step="1" value="39" required>
+              <span class="hint">Expected; term is 37 to 41</span>
+              <span class="error" id="error-gestation_weeks"></span>
+            </div>
+            <div class="field">
+              <label for="plurality">Babies in this pregnancy</label>
+              <input id="plurality" name="plurality" type="number" min="1" max="9" step="1" value="1" required>
+              <span class="hint">1 for a single baby, 2 for twins</span>
+              <span class="error" id="error-plurality"></span>
+            </div>
+            <div class="field wide">
+              <span class="label" id="sex-label">Baby's sex (from ultrasound)</span>
+              <div class="segmented" id="sex-group" role="radiogroup" aria-labelledby="sex-label">
+                <label><input type="radio" name="is_male" value="false"><span>Female</span></label>
+                <label><input type="radio" name="is_male" value="true"><span>Male</span></label>
+              </div>
+              <span class="error" id="error-is_male"></span>
+            </div>
+            <div class="field">
+              <label for="month">Expected delivery month</label>
+              <select id="month" name="month" required>
+                <option value="1">January</option><option value="2">February</option>
+                <option value="3">March</option><option value="4">April</option>
+                <option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option>
+                <option value="9">September</option><option value="10">October</option>
+                <option value="11">November</option><option value="12">December</option>
+              </select>
+              <span class="error" id="error-month"></span>
+            </div>
+            <div class="field">
+              <label for="year_fix">Expected delivery year</label>
+              <input id="year_fix" name="year_fix" type="number" min="1986" max="2100" step="1" required>
+              <span class="error" id="error-year_fix"></span>
+            </div>
+            <div class="field wide">
+              <label class="check"><input type="checkbox" name="lmp_known" checked> Date of the last menstrual period is known</label>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Mother</legend>
+          <div class="grid">
+            <div class="field">
+              <label for="mother_age">Age (years)</label>
+              <input id="mother_age" name="mother_age" type="number" min="10" max="60" step="1" value="29" required>
+              <span class="error" id="error-mother_age"></span>
+            </div>
+            <div class="field">
+              <label for="weight_gain_pounds">Weight gained so far (lb) <span class="optional">optional</span></label>
+              <input id="weight_gain_pounds" name="weight_gain_pounds" type="number" min="0" max="150" step="1">
+              <span class="error" id="error-weight_gain_pounds"></span>
+            </div>
+            <div class="field wide">
+              <span class="label" id="married-label">Married</span>
+              <div class="segmented" role="radiogroup" aria-labelledby="married-label">
+                <label><input type="radio" name="mother_married" value="true"><span>Yes</span></label>
+                <label><input type="radio" name="mother_married" value="false"><span>No</span></label>
+                <label><input type="radio" name="mother_married" value="" checked><span>Unknown</span></label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Mother's previous births</legend>
+          <div class="grid">
+            <div class="field">
+              <label for="born_alive_alive">Children now living</label>
+              <input id="born_alive_alive" name="born_alive_alive" type="number" min="0" max="30" step="1" value="0" required>
+              <span class="error" id="error-born_alive_alive"></span>
+            </div>
+            <div class="field">
+              <label for="born_alive_dead">Born alive, since died</label>
+              <input id="born_alive_dead" name="born_alive_dead" type="number" min="0" max="30" step="1" value="0" required>
+              <span class="error" id="error-born_alive_dead"></span>
+            </div>
+            <div class="field">
+              <label for="born_dead">Born dead</label>
+              <input id="born_dead" name="born_dead" type="number" min="0" max="30" step="1" value="0" required>
+              <span class="error" id="error-born_dead"></span>
+            </div>
+            <div class="field">
+              <label for="ever_born">Total births</label>
+              <input id="ever_born" name="ever_born" type="number" min="1" max="30" step="1" value="1" required>
+              <span class="hint">Including this pregnancy</span>
+              <span class="error" id="error-ever_born"></span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Father</legend>
+          <div class="grid">
+            <div class="field">
+              <label for="father_age">Age (years) <span class="optional">optional</span></label>
+              <input id="father_age" name="father_age" type="number" min="10" max="100" step="1">
+              <span class="error" id="error-father_age"></span>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit" id="submit">Estimate weight</button>
+          <span class="status" id="status" role="status"></span>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script>
+    const NUMBER_FIELDS = {
+      gestation_weeks: "float",
+      mother_age: "float",
+      weight_gain_pounds: "float",
+      father_age: "float",
+      born_alive_alive: "int",
+      born_alive_dead: "int",
+      born_dead: "int",
+      ever_born: "int",
+      plurality: "int",
+      year_fix: "int",
+      month: "int",
+    };
+
+    const CATEGORIES = {
+      low_birth_weight: { text: "Low birth weight (under 2,500 g)", color: "var(--zone-low)" },
+      normal: { text: "Within the typical range (2,500 to 4,000 g)", color: "var(--zone-typical)" },
+      macrosomia: { text: "High birth weight (over 4,000 g)", color: "var(--zone-high)" },
+    };
+
+    // Distribution of birth weights in the study data (docs/data_report.md).
+    const STUDY_MEAN = 3368;
+    const STUDY_SD = 591;
+    const SCALE_MIN = 1000;
+    const SCALE_MAX = 5500;
+    const CHART_WIDTH = 400;
+    const BASELINE_Y = 140;
+    const PEAK_Y = 14;
+
+    const form = document.getElementById("predict-form");
+    const submitButton = document.getElementById("submit");
+    const statusEl = document.getElementById("status");
+    const noticeSlot = document.getElementById("notice-slot");
+    let modelReady = true;
+    let liveUpdates = false;
+    let liveTimer = null;
+
+    const now = new Date();
+    form.year_fix.value = now.getFullYear();
+    form.month.value = String(now.getMonth() + 1);
+
+    function xFor(grams) {
+      const clamped = Math.min(Math.max(grams, SCALE_MIN), SCALE_MAX);
+      return ((clamped - SCALE_MIN) / (SCALE_MAX - SCALE_MIN)) * CHART_WIDTH;
+    }
+
+    function yFor(grams) {
+      const z = (grams - STUDY_MEAN) / STUDY_SD;
+      return BASELINE_Y - (BASELINE_Y - PEAK_Y) * Math.exp(-0.5 * z * z);
+    }
+
+    function curvePoints(from, to) {
+      const points = [];
+      for (let g = from; g <= to; g += 25) points.push(`${xFor(g).toFixed(1)},${yFor(g).toFixed(1)}`);
+      return points;
+    }
+
+    function drawChart() {
+      const svgNs = "http://www.w3.org/2000/svg";
+      const zones = [
+        [SCALE_MIN, 2500, "var(--zone-low)"],
+        [2500, 4000, "var(--zone-typical)"],
+        [4000, SCALE_MAX, "var(--zone-high)"],
+      ];
+      const zoneGroup = document.getElementById("zones");
+      for (const [from, to, color] of zones) {
+        const area = document.createElementNS(svgNs, "path");
+        const points = curvePoints(from, to);
+        area.setAttribute("d", `M ${xFor(from)},${BASELINE_Y} L ${points.join(" L ")} L ${xFor(to)},${BASELINE_Y} Z`);
+        area.setAttribute("fill", color);
+        area.setAttribute("fill-opacity", "0.55");
+        zoneGroup.appendChild(area);
+      }
+      document.getElementById("outline").setAttribute("d", `M ${curvePoints(SCALE_MIN, SCALE_MAX).join(" L ")}`);
+
+      const axis = document.getElementById("axis");
+      for (const grams of [1000, 2500, 4000, 5500]) {
+        const label = document.createElementNS(svgNs, "text");
+        label.setAttribute("x", xFor(grams));
+        label.setAttribute("y", BASELINE_Y + 20);
+        label.setAttribute("text-anchor", grams === SCALE_MIN ? "start" : grams === SCALE_MAX ? "end" : "middle");
+        label.textContent = grams.toLocaleString("en-US") + (grams === SCALE_MAX ? " g" : "");
+        axis.appendChild(label);
+      }
+    }
+
+    function showNotice(text) {
+      noticeSlot.innerHTML = "";
+      if (!text) return;
+      const p = document.createElement("p");
+      p.className = "notice";
+      p.textContent = text;
+      noticeSlot.appendChild(p);
+    }
+
+    async function loadServiceState() {
+      const modelLine = document.getElementById("model-line");
+      try {
+        const [healthRes, infoRes] = await Promise.all([fetch("/health"), fetch("/model/info")]);
+        const health = await healthRes.json();
+        const info = await infoRes.json();
+        if (health.model_ready) {
+          modelLine.textContent = `Model in use: ${info.model_name}, version ${info.model_version}`;
+        } else {
+          modelLine.textContent = "No model is loaded.";
+          modelReady = false;
+          submitButton.disabled = true;
+          showNotice("Estimates are unavailable until a trained model is deployed.");
+        }
+      } catch {
+        modelLine.textContent = "The prediction service cannot be reached.";
+      }
+    }
+
+    function clearErrors() {
+      form.querySelectorAll(".error").forEach((el) => { el.textContent = ""; });
+      form.querySelectorAll("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
+      document.getElementById("sex-group").classList.remove("invalid");
+    }
+
+    function setError(field, message) {
+      const slot = document.getElementById(`error-${field}`);
+      if (slot) slot.textContent = message;
+      const input = form.elements[field];
+      if (input instanceof HTMLElement) input.setAttribute("aria-invalid", "true");
+      if (field === "is_male") document.getElementById("sex-group").classList.add("invalid");
+    }
+
+    function isComplete() {
+      const numbersValid = Object.keys(NUMBER_FIELDS).every((name) => form.elements[name].checkValidity());
+      return numbersValid && Boolean(form.querySelector('input[name="is_male"]:checked'));
+    }
+
+    function reportProblems() {
+      for (const name of Object.keys(NUMBER_FIELDS)) {
+        const input = form.elements[name];
+        if (!input.checkValidity()) {
+          const range = input.min && input.max ? ` between ${input.min} and ${input.max}` : "";
+          setError(name, input.value === "" ? "Enter a value." : `Enter a whole number${range}.`);
+        }
+      }
+      if (!form.querySelector('input[name="is_male"]:checked')) setError("is_male", "Select the baby's sex.");
+      const first = form.querySelector('[aria-invalid="true"]') || form.querySelector('input[name="is_male"]');
+      if (first) first.focus();
+    }
+
+    function buildPayload() {
+      const data = new FormData(form);
+      const payload = {};
+      for (const [name, type] of Object.entries(NUMBER_FIELDS)) {
+        const raw = String(data.get(name) ?? "").trim();
+        payload[name] = raw === "" ? null : type === "int" ? parseInt(raw, 10) : parseFloat(raw);
+      }
+      payload.is_male = data.get("is_male") === "true";
+      const married = data.get("mother_married");
+      payload.mother_married = married === "" ? null : married === "true";
+      payload.lmp_known = data.get("lmp_known") === "on";
+      return payload;
+    }
+
+    function toPoundsOunces(grams) {
+      const totalOunces = Math.round(grams / 28.3495);
+      return `${Math.floor(totalOunces / 16)} lb ${totalOunces % 16} oz`;
+    }
+
+    function showResult(body) {
+      const grams = body.predicted_weight_grams;
+      const category = CATEGORIES[body.risk_category];
+      const gramsEl = document.getElementById("grams");
+      gramsEl.textContent = Math.round(grams).toLocaleString("en-US");
+      gramsEl.hidden = false;
+      document.getElementById("unit").hidden = false;
+      document.getElementById("prompt").hidden = true;
+      document.getElementById("category-row").hidden = false;
+      document.getElementById("imperial").textContent = toPoundsOunces(grams);
+      document.getElementById("category").textContent = category ? category.text : body.risk_category;
+      document.getElementById("category-dot").style.background = category ? category.color : "var(--curve)";
+      const marker = document.getElementById("marker");
+      marker.style.opacity = "1";
+      marker.style.transform = `translateX(${xFor(grams).toFixed(1)}px)`;
+    }
+
+    async function requestEstimate({ fromLiveUpdate = false } = {}) {
+      if (!fromLiveUpdate) submitButton.disabled = true;
+      statusEl.textContent = "Estimating...";
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildPayload()),
+        });
+        const body = await response.json();
+        if (response.ok) {
+          showResult(body);
+          statusEl.textContent = "The estimate updates as you change the form.";
+          liveUpdates = true;
+          if (!fromLiveUpdate && window.matchMedia("(max-width: 900px)").matches) {
+            document.querySelector(".reading").scrollIntoView({ block: "start" });
+          }
+        } else if (response.status === 422 && Array.isArray(body.detail)) {
+          body.detail.forEach((item) => setError(item.loc[item.loc.length - 1], item.msg));
+          statusEl.textContent = "Check the highlighted fields.";
+        } else if (response.status === 503) {
+          showNotice("No trained model is loaded on the server, so no estimate can be made.");
+          statusEl.textContent = "";
+        } else {
+          statusEl.textContent = `The server returned an error (${response.status}).`;
+        }
+      } catch {
+        statusEl.textContent = "The prediction service cannot be reached. Check the connection and try again.";
+      } finally {
+        submitButton.disabled = !modelReady;
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      clearErrors();
+      showNotice("");
+      if (!isComplete()) {
+        reportProblems();
+        statusEl.textContent = "Check the highlighted fields.";
+        return;
+      }
+      requestEstimate();
+    });
+
+    form.addEventListener("input", () => {
+      if (!liveUpdates || !modelReady) return;
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => {
+        clearErrors();
+        if (isComplete()) requestEstimate({ fromLiveUpdate: true });
+      }, 350);
+    });
+
+    drawChart();
+    loadServiceState();
+  </script>
+</body>
+</html>
