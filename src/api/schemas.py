@@ -34,6 +34,7 @@ class PredictionResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_ready: bool
+    version: str
 
 
 class ModelInfoResponse(BaseModel):

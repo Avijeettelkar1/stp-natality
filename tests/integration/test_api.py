@@ -33,6 +33,7 @@ def test_health_reports_model_state():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["model_ready"] is model_service.ready
+    assert response.json()["version"]
 
 
 def test_predict_returns_valid_contract(monkeypatch):
@@ -60,3 +61,11 @@ def test_predict_returns_503_without_model(monkeypatch):
     monkeypatch.setattr(model_service, "model", None)
     response = client.post("/predict", json=VALID_REQUEST)
     assert response.status_code == 503
+
+
+def test_index_serves_prediction_form():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert 'id="predict-form"' in response.text
+    assert "/predict" in response.text

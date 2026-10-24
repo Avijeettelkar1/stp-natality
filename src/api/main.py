@@ -1,9 +1,11 @@
 """FastAPI application serving the selected birth-weight model."""
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.api.schemas import (
@@ -25,6 +27,12 @@ app = FastAPI(
 )
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 model_service = ModelService()
+
+
+@app.get("/", include_in_schema=False)
+def index() -> FileResponse:
+    """Serve the prediction form."""
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/docs", include_in_schema=False)
@@ -52,6 +60,7 @@ def health() -> HealthResponse:
     return HealthResponse(
         status="ready" if model_service.ready else "model_unavailable",
         model_ready=model_service.ready,
+        version=os.getenv("GIT_SHA", "local"),
     )
 
 
