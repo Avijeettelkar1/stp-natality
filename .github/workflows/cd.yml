@@ -14,10 +14,6 @@ concurrency:
   group: production-deploy
   cancel-in-progress: false
 
-env:
-  # GitHub release that holds the model files to deploy.
-  MODEL_RELEASE: model-current
-
 jobs:
   ci:
     name: CI
@@ -37,16 +33,29 @@ jobs:
           echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
           echo "TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
 
-      - name: Fetch model files
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install DVC
+        run: uv tool install dvc==3.67.1
+
+      - name: Pull model from DVC remote (DagsHub)
         env:
-          GH_TOKEN: ${{ github.token }}
+          DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          mkdir -p models
-          gh release download "$MODEL_RELEASE" \
-            --pattern "birth_weight_pipeline.joblib" \
-            --pattern "model_metadata.json" \
-            --dir models
+          if [ -z "$DAGSHUB_USER" ] || [ -z "$DAGSHUB_TOKEN" ]; then
+            echo "::error::DAGSHUB_USER and DAGSHUB_TOKEN secrets are required to pull the model."
+            exit 1
+          fi
+          dvc remote modify dagshub --local auth basic
+          dvc remote modify dagshub --local user "$DAGSHUB_USER"
+          dvc remote modify dagshub --local password "$DAGSHUB_TOKEN"
+          dvc pull models.dvc
+          echo "Model version deployed (models.dvc):"
+          cat models.dvc
           cat models/model_metadata.json
+          test -f models/birth_weight_pipeline.joblib
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3

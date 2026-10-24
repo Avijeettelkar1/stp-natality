@@ -1,4 +1,4 @@
-﻿# 001 - Single-container deployment, plain HTML frontend
+# 001 - Single-container deployment, plain HTML frontend
 
 **Status:** Accepted
 **Date:** 2026-10-23
@@ -8,8 +8,14 @@ We need a user-facing way to enter mother/pregnancy data and get a
 birth-weight prediction, deployed through our CI/CD pipeline.
 
 ## Decision
-- The trained model file (`birth_weight_pipeline.joblib`) is baked into
-  the Docker image and loaded into memory by the FastAPI backend.
+- **Source of truth for the model:** the trained model files
+  (`birth_weight_pipeline.joblib`, `model_metadata.json`) are versioned
+  with DVC. `models.dvc` in Git points to the exact version; the files
+  themselves are stored in the DagsHub DVC remote.
+- **Delivery format:** during CD, the pipeline runs `dvc pull models.dvc`
+  and copies the pulled files into the Docker image. At runtime the
+  FastAPI backend loads the model from the image into memory. The image
+  does not download anything when it starts.
 - The frontend is a single `index.html` (HTML, CSS, vanilla JS) served
   by FastAPI at `/`. It calls `POST /predict`.
 - Result: one container, one deployment, one URL.
@@ -26,6 +32,9 @@ birth-weight prediction, deployed through our CI/CD pipeline.
   latency and a second service with no benefit.
 
 ## Consequences
+- Each image is tagged with the commit SHA it was built from. That commit's
+  `models.dvc` names the exact model version, so every deployment can be
+  traced back to the model in DagsHub.
 - Each image tag = exactly one model version, so rollback = redeploy the
   previous image.
 - Frontend and API always deploy together, so they can't get out of sync.
