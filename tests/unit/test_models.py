@@ -9,6 +9,7 @@ from src.models.evaluate import (
     compute_clinical_metrics,
     compute_regression_metrics,
     evaluate_split,
+    evaluate_subgroups,
 )
 from src.models.pipeline import (
     BINARY_FEATURES,
@@ -215,3 +216,12 @@ def test_evaluate_split_train_prefix(sample_df):
     result = evaluate_split(pipe, X, y, split_name="train")
     assert "train_mae" in result
     assert "train_sensitivity" in result
+
+
+def test_evaluate_subgroups_returns_prespecified_groups(sample_df):
+    X, y = get_X_y(sample_df)
+    pipe = build_pipeline(DummyRegressor(strategy="mean"))
+    pipe.fit(X, y)
+    result = evaluate_subgroups(pipe, X, y, minimum_rows=1)
+    assert set(result) == {"sex", "gestation_band", "year_band"}
+    assert result["sex"]

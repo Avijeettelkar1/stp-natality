@@ -1,0 +1,122 @@
+{
+  "method": "two_sample_kolmogorov_smirnov",
+  "alpha": 0.01,
+  "minimum_ks": 0.1,
+  "drift_detected": true,
+  "drifted_features": [
+    "gestation_weeks",
+    "mother_age",
+    "weight_gain_pounds",
+    "father_age",
+    "year_fix",
+    "mother_married",
+    "mother_age_group"
+  ],
+  "features": {
+    "gestation_weeks": {
+      "status": "drift_detected",
+      "ks_statistic": 0.14079,
+      "p_value": 0.0
+    },
+    "mother_age": {
+      "status": "drift_detected",
+      "ks_statistic": 0.151169,
+      "p_value": 0.0
+    },
+    "weight_gain_pounds": {
+      "status": "drift_detected",
+      "ks_statistic": 0.359652,
+      "p_value": 0.0
+    },
+    "born_alive_alive": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.018791,
+      "p_value": 0.0
+    },
+    "born_alive_dead": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.031952,
+      "p_value": 0.0
+    },
+    "born_dead": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.059119,
+      "p_value": 0.0
+    },
+    "ever_born": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.044149,
+      "p_value": 0.0
+    },
+    "father_age": {
+      "status": "drift_detected",
+      "ks_statistic": 0.145169,
+      "p_value": 0.0
+    },
+    "plurality": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.012548,
+      "p_value": 0.0
+    },
+    "parity": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.033036,
+      "p_value": 0.0
+    },
+    "year_fix": {
+      "status": "drift_detected",
+      "ks_statistic": 1.0,
+      "p_value": 0.0
+    },
+    "month": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.006627,
+      "p_value": 0.00087147
+    },
+    "birth_month_sin": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.004521,
+      "p_value": 0.05452143
+    },
+    "birth_month_cos": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.006422,
+      "p_value": 0.0013953
+    },
+    "is_male": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.001234,
+      "p_value": 0.9992933
+    },
+    "mother_married": {
+      "status": "drift_detected",
+      "ks_statistic": 0.114612,
+      "p_value": 0.0
+    },
+    "lmp_known": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.040475,
+      "p_value": 0.0
+    },
+    "is_multiple_birth": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.014035,
+      "p_value": 0.0
+    },
+    "gestation_preterm": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.038501,
+      "p_value": 0.0
+    },
+    "gestation_post_term": {
+      "status": "no_drift_detected",
+      "ks_statistic": 0.044218,
+      "p_value": 0.0
+    },
+    "mother_age_group": {
+      "status": "drift_detected",
+      "ks_statistic": 0.147869,
+      "p_value": 0.0
+    }
+  }
+}

@@ -125,7 +125,8 @@ flake8 src/ tests/
 pytest tests/ --cov=src --cov-report=term-missing
 ```
 
-> **Coverage target:** ≥ 80% for all `src/` modules.
+Coverage is reported in CI. Prioritize meaningful tests for data contracts,
+preprocessing, model evaluation, and API behavior over a fixed percentage.
 
 ### Docstrings
 All functions and classes must have **Google-style docstrings**:

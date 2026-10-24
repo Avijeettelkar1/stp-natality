@@ -1,0 +1,170 @@
+{
+  "candidates": {
+    "dummy_mean": {
+      "train_mae": 438.72,
+      "train_rmse": 589.288,
+      "train_r2": 0.0,
+      "train_lbw_prevalence_pct": 6.88,
+      "train_sensitivity": 0.0,
+      "train_specificity": 1.0,
+      "train_precision": 0.0,
+      "train_f1": 0.0,
+      "train_n_lbw_true": 20588,
+      "train_n_lbw_pred": 0,
+      "val_mae": 436.574,
+      "val_rmse": 589.205,
+      "val_r2": -0.0,
+      "val_lbw_prevalence_pct": 6.68,
+      "val_sensitivity": 0.0,
+      "val_specificity": 1.0,
+      "val_precision": 0.0,
+      "val_f1": 0.0,
+      "val_n_lbw_true": 5017,
+      "val_n_lbw_pred": 0,
+      "mlflow_run_id": "dd9fa21d45474149b45be4ce474064c5"
+    },
+    "ridge": {
+      "train_mae": 392.566,
+      "train_rmse": 515.067,
+      "train_r2": 0.236,
+      "train_lbw_prevalence_pct": 6.88,
+      "train_sensitivity": 0.2181,
+      "train_specificity": 0.9924,
+      "train_precision": 0.6785,
+      "train_f1": 0.3301,
+      "train_n_lbw_true": 20588,
+      "train_n_lbw_pred": 6619,
+      "val_mae": 379.171,
+      "val_rmse": 489.539,
+      "val_r2": 0.3097,
+      "val_lbw_prevalence_pct": 6.68,
+      "val_sensitivity": 0.2874,
+      "val_specificity": 0.9925,
+      "val_precision": 0.7342,
+      "val_f1": 0.4131,
+      "val_n_lbw_true": 5017,
+      "val_n_lbw_pred": 1964,
+      "mlflow_run_id": "d9d6b90fa3dd4e348ecfb1bae34ab78e"
+    },
+    "lightgbm": {
+      "train_mae": 379.775,
+      "train_rmse": 496.956,
+      "train_r2": 0.2888,
+      "train_lbw_prevalence_pct": 6.88,
+      "train_sensitivity": 0.252,
+      "train_specificity": 0.9936,
+      "train_precision": 0.7444,
+      "train_f1": 0.3765,
+      "train_n_lbw_true": 20588,
+      "train_n_lbw_pred": 6969,
+      "val_mae": 366.563,
+      "val_rmse": 474.835,
+      "val_r2": 0.3505,
+      "val_lbw_prevalence_pct": 6.68,
+      "val_sensitivity": 0.343,
+      "val_specificity": 0.9916,
+      "val_precision": 0.746,
+      "val_f1": 0.47,
+      "val_n_lbw_true": 5017,
+      "val_n_lbw_pred": 2307,
+      "mlflow_run_id": "2c7a8447132c40bb9ef9f910b67d9da3"
+    }
+  },
+  "selected": {
+    "model_name": "lightgbm",
+    "model_version": "20260907153537",
+    "trained_at_utc": "2026-09-07T15:35:37.600467+00:00",
+    "features": [
+      "gestation_weeks",
+      "mother_age",
+      "weight_gain_pounds",
+      "born_alive_alive",
+      "born_alive_dead",
+      "born_dead",
+      "ever_born",
+      "father_age",
+      "plurality",
+      "parity",
+      "year_fix",
+      "month",
+      "birth_month_sin",
+      "birth_month_cos",
+      "is_male",
+      "mother_married",
+      "lmp_known",
+      "is_multiple_birth",
+      "gestation_preterm",
+      "gestation_post_term",
+      "mother_age_group"
+    ],
+    "training_rows": 299431,
+    "data_contract": "natality-26-v1",
+    "validation_improvement_over_mean_pct": 16.04,
+    "subgroups": {
+      "sex": {
+        "male": {
+          "n": 63824,
+          "mae": 369.093,
+          "rmse": 478.884,
+          "r2": 0.3977,
+          "lbw_sensitivity": 0.4024,
+          "lbw_specificity": 0.991
+        },
+        "female": {
+          "n": 60921,
+          "mae": 356.197,
+          "rmse": 459.936,
+          "r2": 0.3678,
+          "lbw_sensitivity": 0.3711,
+          "lbw_specificity": 0.9894
+        }
+      },
+      "gestation_band": {
+        "term": {
+          "n": 100045,
+          "mae": 346.925,
+          "rmse": 445.249,
+          "r2": 0.1521,
+          "lbw_sensitivity": 0.0126,
+          "lbw_specificity": 0.9997
+        },
+        "preterm": {
+          "n": 14321,
+          "mae": 450.987,
+          "rmse": 578.398,
+          "r2": 0.4916,
+          "lbw_sensitivity": 0.5928,
+          "lbw_specificity": 0.8676
+        },
+        "post_term": {
+          "n": 7398,
+          "mae": 371.036,
+          "rmse": 478.888,
+          "r2": 0.065,
+          "lbw_sensitivity": 0.0058,
+          "lbw_specificity": 0.9999
+        }
+      },
+      "year_band": {
+        "2016_plus": {
+          "n": 124745,
+          "mae": 362.795,
+          "rmse": 469.726,
+          "r2": 0.3888,
+          "lbw_sensitivity": 0.3862,
+          "lbw_specificity": 0.9902
+        }
+      }
+    },
+    "test_mae": 362.795,
+    "test_rmse": 469.726,
+    "test_r2": 0.3888,
+    "test_lbw_prevalence_pct": 7.56,
+    "test_sensitivity": 0.3862,
+    "test_specificity": 0.9902,
+    "test_precision": 0.7636,
+    "test_f1": 0.513,
+    "test_n_lbw_true": 9433,
+    "test_n_lbw_pred": 4771
+  }
+}

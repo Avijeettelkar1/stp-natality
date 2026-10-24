@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-# Columns to unconditionally remove (data leakage or no clinical value)
+# Columns unavailable at prediction time or intentionally excluded.
 LEAKAGE_COLUMNS = ["apgar_1min", "apgar_5min", "day"]
 
 # Boolean columns stored as "true"/"false" strings (or True/False objects)
@@ -157,11 +157,12 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def cap_outliers(df: pd.DataFrame) -> pd.DataFrame:
-    """Cap/clip feature values to clinically valid ranges.
+    """Replace invalid feature values and flag invalid target values.
 
     Ranges applied:
-    - ``gestation_weeks``: clipped to [20, 44]
-    - ``mother_age``: clipped to [10, 60]
+    - ``gestation_weeks`` outside [20, 44]: set to missing
+    - ``mother_age`` outside [10, 60]: set to missing
+    - negative ``weight_gain_pounds``: set to missing
     - ``weight_pounds`` (target): rows outside [0.66, 15.43] are flagged
       with an ``outlier_weight`` boolean column (not removed here).
 
@@ -180,11 +181,9 @@ def cap_outliers(df: pd.DataFrame) -> pd.DataFrame:
             | (df["gestation_weeks"] > GESTATION_WEEKS_MAX)
         ) & df["gestation_weeks"].notna()
         n = out_of_range.sum()
-        df["gestation_weeks"] = df["gestation_weeks"].clip(
-            lower=GESTATION_WEEKS_MIN, upper=GESTATION_WEEKS_MAX
-        )
+        df.loc[out_of_range, "gestation_weeks"] = np.nan
         logger.info(
-            "gestation_weeks: capped %d out-of-range values to [%d, %d]",
+            "gestation_weeks: set %d values outside [%d, %d] to NaN",
             n,
             GESTATION_WEEKS_MIN,
             GESTATION_WEEKS_MAX,
@@ -195,14 +194,20 @@ def cap_outliers(df: pd.DataFrame) -> pd.DataFrame:
             (df["mother_age"] < MOTHER_AGE_MIN) | (df["mother_age"] > MOTHER_AGE_MAX)
         ) & df["mother_age"].notna()
         n = out_of_range.sum()
-        df["mother_age"] = df["mother_age"].clip(
-            lower=MOTHER_AGE_MIN, upper=MOTHER_AGE_MAX
-        )
+        df.loc[out_of_range, "mother_age"] = np.nan
         logger.info(
-            "mother_age: capped %d out-of-range values to [%d, %d]",
+            "mother_age: set %d values outside [%d, %d] to NaN",
             n,
             MOTHER_AGE_MIN,
             MOTHER_AGE_MAX,
+        )
+
+    if "weight_gain_pounds" in df.columns:
+        negative_gain = df["weight_gain_pounds"] < 0
+        df.loc[negative_gain, "weight_gain_pounds"] = np.nan
+        logger.info(
+            "weight_gain_pounds: set %d negative values to NaN",
+            negative_gain.sum(),
         )
 
     if "weight_pounds" in df.columns:
