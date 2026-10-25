@@ -26,14 +26,12 @@ contributes encountered challenges to the report.
 
 | Role category (process model) | Responsibilities in this project | Main | Support |
 |---|---|---|---|
-| Strategy & Project Management | Scope, planning, advisor communication, checkpoint decisions, final report | `<Member>` | `<Member>` |
-| Data Management & Analysis | Data contract, ingestion, cleaning, feature engineering, temporal split, data quality | `<Member>` | `<Member>` |
-| Analytical Modeling | Candidate models, experiments in MLflow, evaluation, subgroup analysis | `<Member>` | `<Member>` |
-| Data Infrastructure & Operations | CI/CD, container, deployment, DVC remote, monitoring, rollback | `<Member>` | `<Member>` |
+| Strategy & Project Management | Scope, planning, advisor communication, checkpoint decisions, final report | `<Anjan>` | `<Avijeet>` |
+| Data Management & Analysis | Data contract, ingestion, cleaning, feature engineering, temporal split, data quality | `<Avijeet>` | `<Anjan>` |
+| Analytical Modeling | Candidate models, experiments in MLflow, evaluation, subgroup analysis | `<Dhruva>` | `<Rakshith>` |
+| Data Infrastructure & Operations | CI/CD, container, deployment, DVC remote, monitoring, rollback | `<Dhruva>` | `<Rakshith>` |
 | Domain Expertise | Clinical meaning of results, limitations, intended use | Advisors and literature | All members |
 
-No team member has clinical training. Domain knowledge comes from the advisors,
-the literature, and the documented limitations, which is itself a project risk.
 
 ## Milestones
 
@@ -45,9 +43,9 @@ the literature, and the documented limitations, which is itself a project risk.
 | Conditional-Go for the prototype recorded | Evaluation | Done; advisor confirmation open |
 | Website, container, CI/CD and deployment to Render | Deployment | Done |
 | Model and data versioned with DVC on DagsHub | Deployment | Model done; processed data open |
-| Training in the pipeline with automatic model promotion | Deployment | Open |
+| Training in the pipeline with automatic model promotion | Deployment | Done|
 | Scheduled monitoring and retraining trigger | Utilization | Open |
-| Final report, presentation and demo | Project finalization | Open (`<presentation date>`) |
+| Final report, presentation and demo | Project finalization | Open (`<04-11-2026>`) |
 
 ## Risks and responses
 
