@@ -18,23 +18,36 @@ with each technical artifact rather than after implementation.
 | Utilization | Drift and maintenance demo | Report generated and runbook exercised |
 | Reporting | Final scientific report | Evidence, figures, references, reflection reviewed |
 
-## Roles
+## Team composition
 
-- Project coordination/domain translation: scope, evidence, advisor decisions.
-- Data engineering: data contract, pipeline, quality, and lineage.
-- Analytical modeling: experiments, evaluation, interpretation.
-- Infrastructure/operations: CI, API, container, monitoring, maintenance.
+The process model groups Data Science work into five role categories. Each team
+member has a main role and supports others; every member reviews code and
+contributes encountered challenges to the report.
 
-All members review code and contribute encountered challenges to the report.
+| Role category (process model) | Responsibilities in this project | Main | Support |
+|---|---|---|---|
+| Strategy & Project Management | Scope, planning, advisor communication, checkpoint decisions, final report | `<Member>` | `<Member>` |
+| Data Management & Analysis | Data contract, ingestion, cleaning, feature engineering, temporal split, data quality | `<Member>` | `<Member>` |
+| Analytical Modeling | Candidate models, experiments in MLflow, evaluation, subgroup analysis | `<Member>` | `<Member>` |
+| Data Infrastructure & Operations | CI/CD, container, deployment, DVC remote, monitoring, rollback | `<Member>` | `<Member>` |
+| Domain Expertise | Clinical meaning of results, limitations, intended use | Advisors and literature | All members |
 
-## Immediate sequence
+No team member has clinical training. Domain knowledge comes from the advisors,
+the literature, and the documented limitations, which is itself a project risk.
 
-1. Restore the five DVC-tracked raw files.
-2. Run a bounded development pipeline and all tests.
-3. Run the final data preparation and model comparison.
-4. Review results and record the evaluation decision.
-5. Package the approved model, smoke-test the API, and generate drift evidence.
-6. Insert verified results into the final report and complete peer/advisor review.
+## Milestones
+
+| Milestone | Stage | Status |
+|---|---|---|
+| Scope, requirements and success criteria defined | Business Understanding | Done |
+| Data pipeline, quality checks and temporal split | Data Collection, Exploration, Preparation | Done |
+| Candidate models trained and selected by validation MAE | Analysis | Done |
+| Conditional-Go for the prototype recorded | Evaluation | Done; advisor confirmation open |
+| Website, container, CI/CD and deployment to Render | Deployment | Done |
+| Model and data versioned with DVC on DagsHub | Deployment | Model done; processed data open |
+| Training in the pipeline with automatic model promotion | Deployment | Open |
+| Scheduled monitoring and retraining trigger | Utilization | Open |
+| Final report, presentation and demo | Project finalization | Open (`<presentation date>`) |
 
 ## Risks and responses
 
