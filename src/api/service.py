@@ -17,6 +17,7 @@ DEFAULT_MODEL_PATH = Path("models/birth_weight_pipeline.joblib")
 def prepare_features(request: PredictionRequest) -> pd.DataFrame:
     """Convert validated raw inputs to the model's exact feature contract."""
     values = request.model_dump()
+
     month = values["month"]
     gestation = values["gestation_weeks"]
     mother_age = values["mother_age"]
@@ -41,25 +42,51 @@ def prepare_features(request: PredictionRequest) -> pd.DataFrame:
             ),
         }
     )
+
     values["is_male"] = int(values["is_male"])
+
     values["mother_married"] = (
         np.nan if values["mother_married"] is None else int(values["mother_married"])
     )
+
     values["lmp_known"] = int(values["lmp_known"])
+
     return pd.DataFrame(
         [{feature: values.get(feature, np.nan) for feature in MODEL_FEATURES}]
     ).astype("float64")
 
 
 class ModelService:
-    """Load a versioned sklearn pipeline and expose stable prediction methods."""
+    """Load a versioned sklearn pipeline and expose prediction methods."""
 
-    def __init__(self, model_path: Path | None = None):
-        configured = os.getenv("MODEL_PATH")
-        self.model_path = model_path or Path(configured or DEFAULT_MODEL_PATH)
-        self.metadata_path = self.model_path.with_name("model_metadata.json")
+    def __init__(
+        self,
+        model_path: Path | None = None,
+        env_var: str = "MODEL_PATH",
+        use_default: bool = True,
+    ):
+        configured = os.getenv(env_var)
+
+        if model_path is not None:
+            resolved_path = model_path
+        elif configured:
+            resolved_path = Path(configured)
+        elif use_default:
+            resolved_path = DEFAULT_MODEL_PATH
+        else:
+            resolved_path = None
+
+        self.model_path = resolved_path
+
+        self.metadata_path = (
+            resolved_path.with_name("model_metadata.json")
+            if resolved_path is not None
+            else None
+        )
+
         self.model = None
         self.metadata: dict = {}
+
         self.load()
 
     @property
@@ -67,24 +94,41 @@ class ModelService:
         return self.model is not None
 
     def load(self) -> None:
+        if self.model_path is None:
+            return
+
         if not self.model_path.exists():
             return
+
         self.model = joblib.load(self.model_path)
-        if self.metadata_path.exists():
+
+        if self.metadata_path and self.metadata_path.exists():
             self.metadata = json.loads(self.metadata_path.read_text(encoding="utf-8"))
 
     def predict(self, request: PredictionRequest) -> float:
         if self.model is None:
-            raise RuntimeError(
-                "Model artifact is unavailable. Run scripts/train.py first."
-            )
+            raise RuntimeError("Model artifact is unavailable.")
+
         prediction = self.model.predict(prepare_features(request))[0]
+
         return round(float(prediction), 1)
 
     def info(self) -> dict:
         return {
-            "model_name": self.metadata.get("model_name", "unavailable"),
-            "model_version": self.metadata.get("model_version", "unavailable"),
-            "data_contract": self.metadata.get("data_contract", "natality-26-v1"),
-            "features": self.metadata.get("features", MODEL_FEATURES),
+            "model_name": self.metadata.get(
+                "model_name",
+                "unavailable",
+            ),
+            "model_version": self.metadata.get(
+                "model_version",
+                "unavailable",
+            ),
+            "data_contract": self.metadata.get(
+                "data_contract",
+                "natality-26-v1",
+            ),
+            "features": self.metadata.get(
+                "features",
+                MODEL_FEATURES,
+            ),
         }
