@@ -4,9 +4,14 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why this run was started (e.g. retraining after drift)"
+        required: false
+        default: "manual"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 # Never run two deployments at the same time.
@@ -14,24 +19,115 @@ concurrency:
   group: production-deploy
   cancel-in-progress: false
 
+env:
+  MLFLOW_TRACKING_URI: https://dagshub.com/rakshith-bs25/stp-natality-data.mlflow
+
 jobs:
   ci:
     name: CI
     uses: ./.github/workflows/ci.yml
 
-  deploy:
-    name: Build, push and deploy
+  train:
+    name: Train candidates and promotion gate
     needs: ci
     runs-on: ubuntu-latest
+    outputs:
+      promoted: ${{ steps.gate.outputs.promote }}
+      deploy_sha: ${{ steps.resolve.outputs.sha }}
+    env:
+      MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USER }}
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set image name and tag
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Install DVC
+        run: uv tool install dvc==3.67.1
+
+      - name: Pull training data and live model from DVC remote (DagsHub)
+        env:
+          DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
-          echo "TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          if [ -z "$DAGSHUB_USER" ] || [ -z "$DAGSHUB_TOKEN" ]; then
+            echo "::error::DAGSHUB_USER and DAGSHUB_TOKEN secrets are required."
+            exit 1
+          fi
+          dvc remote modify dagshub --local auth basic
+          dvc remote modify dagshub --local user "$DAGSHUB_USER"
+          dvc remote modify dagshub --local password "$DAGSHUB_TOKEN"
+          dvc pull data/processed.dvc models.dvc
+          echo "Training data (data/processed.dvc):"
+          cat data/processed.dvc
+          echo "Live model (models.dvc):"
+          cat models.dvc
+
+      - name: Train all candidate models
+        run: |
+          uv run python scripts/train.py \
+            --output-dir artifacts/challenger \
+            --report artifacts/model_metrics.json
+
+      - name: Promotion gate (challenger vs. live model)
+        id: gate
+        run: |
+          uv run python scripts/promote_model.py \
+            --champion-dir models \
+            --challenger-dir artifacts/challenger \
+            --report artifacts/promotion_decision.json \
+            --register
+
+      - name: Save the promoted model as the new live model
+        if: steps.gate.outputs.promote == 'true'
+        run: |
+          cp artifacts/challenger/* models/
+          dvc add models
+          dvc push models.dvc
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add models.dvc .gitignore
+          git commit -m "model: promote ${{ steps.gate.outputs.challenger }} after training run ${{ github.run_id }} [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Resolve the commit to deploy
+        id: resolve
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload training and promotion reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-reports
+          path: |
+            artifacts/model_metrics.json
+            artifacts/promotion_decision.json
+          if-no-files-found: ignore
+
+  deploy:
+    name: Build, push and deploy
+    needs: train
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ needs.train.outputs.deploy_sha }}
+
+    steps:
+      - name: Checkout the commit to deploy
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.train.outputs.deploy_sha }}
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -44,10 +140,6 @@ jobs:
           DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          if [ -z "$DAGSHUB_USER" ] || [ -z "$DAGSHUB_TOKEN" ]; then
-            echo "::error::DAGSHUB_USER and DAGSHUB_TOKEN secrets are required to pull the model."
-            exit 1
-          fi
           dvc remote modify dagshub --local auth basic
           dvc remote modify dagshub --local user "$DAGSHUB_USER"
           dvc remote modify dagshub --local password "$DAGSHUB_TOKEN"
@@ -70,7 +162,7 @@ jobs:
           context: .
           file: deployment/Dockerfile
           push: true
-          build-args: GIT_SHA=${{ github.sha }}
+          build-args: GIT_SHA=${{ env.TAG }}
           tags: |
             ${{ env.IMAGE }}:${{ env.TAG }}
             ${{ env.IMAGE }}:latest
@@ -79,11 +171,16 @@ jobs:
         id: deploy
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          APP_URL: ${{ vars.APP_URL }}
         run: |
           if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
             echo "::warning::RENDER_DEPLOY_HOOK_URL is not set; image pushed but not deployed."
             echo "deployed=false" >> "$GITHUB_OUTPUT"
             exit 0
+          fi
+          if [ -z "$APP_URL" ]; then
+            echo "::error::The APP_URL repository variable is not set, so the live check cannot run."
+            exit 1
           fi
           IMG_URL=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$IMAGE:$TAG")
           curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}&imgURL=${IMG_URL}"
