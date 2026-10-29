@@ -126,3 +126,6 @@ coverage.xml
 # MLflow
 # ============================================================
 mlflow.db
+
+# Training and promotion outputs from scripts/train.py and scripts/promote_model.py
+artifacts/

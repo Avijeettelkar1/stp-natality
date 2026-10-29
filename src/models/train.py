@@ -6,6 +6,7 @@ Provides:
 """
 
 import logging
+import os
 import time
 from typing import Callable, Optional
 
@@ -17,7 +18,18 @@ from src.models.evaluate import evaluate_split
 logger = logging.getLogger(__name__)
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-EXPERIMENT_NAME = "stp-natality-phase3"
+EXPERIMENT_NAME = "stp-natality"
+
+
+def resolve_tracking_uri(default: str) -> str:
+    """Return the MLflow tracking URI to log to.
+
+    Uses ``MLFLOW_TRACKING_URI`` when it is set, for example the team's
+    DagsHub MLflow server, and falls back to ``default`` (a local store)
+    otherwise. Credentials for a remote server are read by MLflow itself
+    from ``MLFLOW_TRACKING_USERNAME`` and ``MLFLOW_TRACKING_PASSWORD``.
+    """
+    return os.getenv("MLFLOW_TRACKING_URI") or default
 
 
 def train_and_log(
@@ -34,7 +46,7 @@ def train_and_log(
 
     Args:
         pipeline: Untrained sklearn Pipeline (preprocessor + model).
-        model_name: Run name (e.g. "xgboost_baseline").
+        model_name: Run name (e.g. "lightgbm").
         X_train: Training feature matrix.
         y_train: Training target (weight_grams).
         X_val: Validation feature matrix.
@@ -102,7 +114,7 @@ def run_hpo(
     logs its val_mae as both the Optuna objective and an MLflow metric.
 
     Args:
-        model_name: Prefix for MLflow run names (e.g. "xgboost_hpo").
+        model_name: Prefix for MLflow run names (e.g. "lightgbm_hpo").
         create_pipeline_fn: Callable(trial: optuna.Trial) → fitted pipeline.
             Must build and return an *untrained* sklearn Pipeline.
         X_train: Training feature matrix.
