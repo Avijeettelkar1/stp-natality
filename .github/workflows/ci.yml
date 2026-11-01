@@ -13,6 +13,21 @@ jobs:
     name: Lint & Test
     runs-on: ubuntu-latest
 
+    # Disposable Postgres for testing the monitoring store's real SQL.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: monitoring_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,6 +50,8 @@ jobs:
         run: uv run flake8 src/ scripts/ tests/ --max-line-length=88
 
       - name: Run tests with coverage
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/monitoring_test
         run: uv run pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing
 
       - name: Create test model for the image build

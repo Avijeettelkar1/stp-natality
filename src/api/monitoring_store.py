@@ -15,6 +15,12 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
+CONNECT_TIMEOUT_SECONDS = 5
+
+
+class PredictionNotFound(Exception):
+    """Feedback refers to a prediction ID that was never logged."""
+
 
 class MonitoringStore:
     """Write prediction monitoring data to PostgreSQL."""
@@ -29,7 +35,9 @@ class MonitoringStore:
     def _connect(self):
         if not self.database_url:
             raise RuntimeError("DATABASE_URL is not configured.")
-        return psycopg.connect(self.database_url, connect_timeout=10)
+        return psycopg.connect(
+            self.database_url, connect_timeout=CONNECT_TIMEOUT_SECONDS
+        )
 
     def log_prediction(
         self,
@@ -91,9 +99,12 @@ class MonitoringStore:
                 actual_weight_g = EXCLUDED.actual_weight_g,
                 created_at = now()
         """
-        with self._connect() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(query, (prediction_id, actual_weight_g))
+        try:
+            with self._connect() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(query, (prediction_id, actual_weight_g))
+        except psycopg.errors.ForeignKeyViolation as exc:
+            raise PredictionNotFound(str(prediction_id)) from exc
 
     def save_support_request(self, category: str, message: str) -> UUID:
         support_id = uuid4()

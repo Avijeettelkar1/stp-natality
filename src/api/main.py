@@ -18,13 +18,13 @@ from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
-from src.api.monitoring_store import MonitoringStore
+from src.api.monitoring_store import MonitoringStore, PredictionNotFound
 from src.api.schemas import (
     FeedbackRequest,
     FeedbackResponse,
@@ -146,8 +146,19 @@ def model_info() -> ModelInfoResponse:
 
 
 # ── Prediction ─────────────────────────────────────────────────────────────────
+def _log_prediction(**record) -> None:
+    """Write one prediction to the monitoring store; never raises."""
+    try:
+        monitoring_store.log_prediction(**record)
+    except Exception:
+        MONITORING_WRITE_ERRORS.labels(operation="prediction").inc()
+        logger.exception("Could not write prediction monitoring record.")
+
+
 @app.post("/predict", response_model=PredictionResponse)
-def predict(request: PredictionRequest) -> PredictionResponse:
+def predict(
+    request: PredictionRequest, background_tasks: BackgroundTasks
+) -> PredictionResponse:
     prediction_started = perf_counter()
 
     try:
@@ -175,29 +186,27 @@ def predict(request: PredictionRequest) -> PredictionResponse:
     risk_category = _risk_category(champion_prediction)
     prediction_id = uuid4()
 
-    # A monitoring write failure must never break production prediction.
+    # Logged after the response is sent: a slow or unavailable monitoring
+    # database never delays or breaks the user's prediction.
     if monitoring_store.ready:
-        try:
-            monitoring_store.log_prediction(
-                prediction_id=prediction_id,
-                inputs=request.model_dump(mode="json"),
-                champion_name=champion_info["model_name"],
-                champion_version=champion_info["model_version"],
-                champion_prediction_g=champion_prediction,
-                challenger_name=(
-                    challenger_info["model_name"] if challenger_info else None
-                ),
-                challenger_version=(
-                    challenger_info["model_version"] if challenger_info else None
-                ),
-                challenger_prediction_g=challenger_prediction,
-                risk_category=risk_category,
-                latency_ms=latency_ms,
-                app_version=os.getenv("GIT_SHA", "local"),
-            )
-        except Exception:
-            MONITORING_WRITE_ERRORS.labels(operation="prediction").inc()
-            logger.exception("Could not write prediction monitoring record.")
+        background_tasks.add_task(
+            _log_prediction,
+            prediction_id=prediction_id,
+            inputs=request.model_dump(mode="json"),
+            champion_name=champion_info["model_name"],
+            champion_version=champion_info["model_version"],
+            champion_prediction_g=champion_prediction,
+            challenger_name=(
+                challenger_info["model_name"] if challenger_info else None
+            ),
+            challenger_version=(
+                challenger_info["model_version"] if challenger_info else None
+            ),
+            challenger_prediction_g=challenger_prediction,
+            risk_category=risk_category,
+            latency_ms=latency_ms,
+            app_version=os.getenv("GIT_SHA", "local"),
+        )
 
     PREDICTIONS.labels(result="success").inc()
     return PredictionResponse(
@@ -220,6 +229,8 @@ def feedback(request: FeedbackRequest) -> FeedbackResponse:
             prediction_id=request.prediction_id,
             actual_weight_g=request.actual_weight_g,
         )
+    except PredictionNotFound as exc:
+        raise HTTPException(status_code=404, detail="Unknown prediction_id.") from exc
     except Exception as exc:
         MONITORING_WRITE_ERRORS.labels(operation="feedback").inc()
         logger.exception("Could not save feedback.")
