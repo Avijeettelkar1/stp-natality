@@ -260,6 +260,13 @@ def support(request: SupportRequest) -> SupportResponse:
 
 
 # ── Prometheus scrape endpoint ───────────────────────────────────────────────
-@app.get("/metrics", include_in_schema=False)
+@app.api_route(
+    "/metrics",
+    methods=["GET", "HEAD"],
+    include_in_schema=False,
+)
 def metrics() -> Response:
-    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
