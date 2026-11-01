@@ -16,6 +16,20 @@ Kolmogorov-Smirnov tests and writes `reports/drift_report.json`. A feature is
 flagged only when `p < 0.01` and the KS statistic is at least `0.10`, avoiding
 alerts for statistically significant but negligible shifts in this large sample.
 
+5. Generate a richer Evidently drift report (optional dependency):
+
+```bash
+uv sync --extra monitoring
+uv run python scripts/drift_evidently.py
+```
+
+This runs Evidently's `DataDriftPreset` over the model features, choosing a
+per-column statistical test (Wasserstein, Jensen-Shannon, etc.), and writes an
+interactive `reports/drift_evidently.html` plus a `reports/drift_evidently.json`
+summary (drift share, per-feature flags and scores). Use `--reference` and
+`--current` to compare any two processed parquet splits. Evidently is not part
+of the serving image; it stays in the `monitoring` extra.
+
 ## What to monitor
 
 - Service: availability, HTTP errors, and latency.

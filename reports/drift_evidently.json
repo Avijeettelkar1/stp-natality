@@ -1,0 +1,127 @@
+{
+  "tool": "evidently",
+  "n_features": 21,
+  "n_drifted": 11,
+  "share_drifted": 0.52381,
+  "dataset_drift": true,
+  "drifted_features": [
+    "born_alive_alive",
+    "born_alive_dead",
+    "born_dead",
+    "ever_born",
+    "father_age",
+    "gestation_weeks",
+    "mother_age",
+    "mother_age_group",
+    "parity",
+    "weight_gain_pounds",
+    "year_fix"
+  ],
+  "features": {
+    "birth_month_cos": {
+      "drift_detected": false,
+      "drift_score": 0.01332,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "birth_month_sin": {
+      "drift_detected": false,
+      "drift_score": 0.007786,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "born_alive_alive": {
+      "drift_detected": true,
+      "drift_score": 0.10266,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "born_alive_dead": {
+      "drift_detected": true,
+      "drift_score": 0.14039,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "born_dead": {
+      "drift_detected": true,
+      "drift_score": 0.133876,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "ever_born": {
+      "drift_detected": true,
+      "drift_score": 0.122406,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "father_age": {
+      "drift_detected": true,
+      "drift_score": 0.291817,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "gestation_post_term": {
+      "drift_detected": false,
+      "drift_score": 0.057499,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "gestation_preterm": {
+      "drift_detected": false,
+      "drift_score": 0.046447,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "gestation_weeks": {
+      "drift_detected": true,
+      "drift_score": 0.22619,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "is_male": {
+      "drift_detected": false,
+      "drift_score": 0.000873,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "is_multiple_birth": {
+      "drift_detected": false,
+      "drift_score": 0.032102,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "lmp_known": {
+      "drift_detected": false,
+      "drift_score": 0.095072,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "month": {
+      "drift_detected": false,
+      "drift_score": 0.011634,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "mother_age": {
+      "drift_detected": true,
+      "drift_score": 0.349965,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "mother_age_group": {
+      "drift_detected": true,
+      "drift_score": 0.116673,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "mother_married": {
+      "drift_detected": false,
+      "drift_score": 0.0909,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "parity": {
+      "drift_detected": true,
+      "drift_score": 0.134038,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "plurality": {
+      "drift_detected": false,
+      "drift_score": 0.030284,
+      "stattest": "Jensen-Shannon distance"
+    },
+    "weight_gain_pounds": {
+      "drift_detected": true,
+      "drift_score": 0.720748,
+      "stattest": "Wasserstein distance (normed)"
+    },
+    "year_fix": {
+      "drift_detected": true,
+      "drift_score": 2.942267,
+      "stattest": "Wasserstein distance (normed)"
+    }
+  }
+}

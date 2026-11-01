@@ -51,6 +51,13 @@ uv run uvicorn src.api.main:app --reload --port 8000
 uv run python scripts/monitor_drift.py
 ```
 
+For a richer drift report, install the `monitoring` extra and run Evidently:
+
+```powershell
+uv sync --extra monitoring
+uv run python scripts/drift_evidently.py
+```
+
 Or start the API container:
 
 ```powershell
