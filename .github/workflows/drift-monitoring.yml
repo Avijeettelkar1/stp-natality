@@ -1,0 +1,84 @@
+name: Drift Monitoring
+
+# Scheduled Evidently data-drift job: compares the training reference with the
+# recent production prediction inputs logged in Supabase and uploads the report.
+# It never runs inside the prediction service.
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily at 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Look-back window (days) of production predictions"
+        required: false
+        default: "30"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drift-monitoring
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: Evidently data-drift report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies (monitoring extra)
+        run: uv sync --extra monitoring --frozen
+
+      - name: Install DVC
+        run: uv tool install dvc==3.67.1
+
+      - name: Pull reference data from DVC (DagsHub)
+        env:
+          DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          if [ -z "$DAGSHUB_USER" ] || [ -z "$DAGSHUB_TOKEN" ]; then
+            echo "::error::DAGSHUB_USER and DAGSHUB_TOKEN secrets are required."
+            exit 1
+          fi
+          dvc remote modify dagshub --local auth basic
+          dvc remote modify dagshub --local user "$DAGSHUB_USER"
+          dvc remote modify dagshub --local password "$DAGSHUB_TOKEN"
+          # DagsHub storage occasionally returns 502; retry the pull.
+          for attempt in 1 2 3 4 5; do
+            if dvc pull data/processed.dvc; then
+              echo "Pulled reference data on attempt $attempt."
+              break
+            fi
+            echo "dvc pull failed (attempt $attempt); retrying in 20s..."
+            sleep 20
+          done
+          test -f data/processed/train.parquet
+
+      - name: Run drift monitoring
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DRIFT_DAYS: ${{ github.event.inputs.days || '30' }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::DATABASE_URL secret is not set; skipping drift run."
+            exit 0
+          fi
+          uv run python scripts/run_drift_monitoring.py --days "$DRIFT_DAYS"
+
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: reports/drift/
+          if-no-files-found: ignore
+          retention-days: 90

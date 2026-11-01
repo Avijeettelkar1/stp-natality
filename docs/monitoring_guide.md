@@ -50,6 +50,15 @@ If there are too few production rows, the job does not fail — it writes
 `{"status": "insufficient_data", ...}` and exits cleanly. Evidently is not part
 of the serving image; it stays in the `monitoring` extra.
 
+This job runs on a schedule via
+[`.github/workflows/drift-monitoring.yml`](../.github/workflows/drift-monitoring.yml)
+(daily, plus manual `workflow_dispatch`). It pulls the reference data from DVC,
+runs the drift job against production inputs, and uploads
+`reports/drift/latest.{html,json}` as a build artifact. It requires repository
+secrets `DATABASE_URL` (Supabase connection string) and the existing
+`DAGSHUB_USER` / `DAGSHUB_TOKEN`. Without `DATABASE_URL` the job warns and skips
+rather than failing.
+
 ## What to monitor
 
 - Service: availability, HTTP errors, and latency.
