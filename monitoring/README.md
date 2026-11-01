@@ -11,20 +11,43 @@ The monitoring component combines three sources in one Grafana Cloud dashboard
 
 Alert rules are listed in [`alerts/alert-rules.md`](alerts/alert-rules.md).
 
+## What the API produces
+
+The API is instrumented to feed both data sources above:
+
+- **Prometheus** — `GET /metrics` exposes `stp_http_requests_total`,
+  `stp_http_request_duration_seconds`, `stp_predictions_total`,
+  `stp_shadow_prediction_difference_grams` and `stp_monitoring_write_errors_total`.
+  Always on; no configuration needed.
+- **Postgres** — when `DATABASE_URL` is set, every `/predict` writes a row to
+  `monitoring.predictions`, `/feedback` upserts the actual weight into
+  `monitoring.feedback`, and `/support` writes to `monitoring.support_requests`.
+  With no `DATABASE_URL` the API still serves predictions; the write endpoints
+  return `503` and `/health` reports `database_ready: false`.
+- **Shadow model** (optional) — set `CHALLENGER_MODEL_PATH` to a second
+  `*.joblib` to run a challenger alongside the champion. Its prediction is
+  logged and the champion↔challenger difference is recorded, but it never
+  affects the response. `/health` reports `challenger_ready`.
+
 ## Setup
 
-### 1. Read-only database user
+### 1. Create the schema, tables, and read-only user
 
-Run once in the Supabase SQL editor (choose your own password):
+Run [`schema.sql`](schema.sql) once in the Supabase SQL editor (creates the
+`monitoring` schema and the three tables the dashboard reads), then create the
+Grafana read-only role (choose your own password):
 
 ```sql
+-- after running schema.sql
 CREATE ROLE grafana_reader WITH LOGIN PASSWORD 'choose-a-strong-password';
 GRANT USAGE ON SCHEMA monitoring TO grafana_reader;
 GRANT SELECT ON ALL TABLES IN SCHEMA monitoring TO grafana_reader;
 ALTER DEFAULT PRIVILEGES IN SCHEMA monitoring GRANT SELECT ON TABLES TO grafana_reader;
 ```
 
-Grafana only reads; the API writes with its own credentials (`DATABASE_URL`).
+Grafana only reads; the API writes with its own credentials. Point the API at
+the database by setting `DATABASE_URL` (Supabase → Connect → the pooled
+connection string) in its environment before starting it.
 
 ### 2. PostgreSQL data source
 
