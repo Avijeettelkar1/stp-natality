@@ -46,6 +46,8 @@ def test_predict_returns_valid_contract(monkeypatch):
     response = client.post("/predict", json=VALID_REQUEST)
     assert response.status_code == 200
     body = response.json()
+
+    assert body["prediction_id"]
     assert body["predicted_weight_grams"] == 3200.0
     assert body["risk_category"] == "normal"
     assert body["model_version"] == "test-1"

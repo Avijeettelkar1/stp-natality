@@ -1,10 +1,56 @@
-"""PostgreSQL persistence used for production monitoring."""
+"""PostgreSQL persistence used for production monitoring.
+
+Stores every prediction (champion and shadow challenger), ground-truth
+feedback and support requests in the ``monitoring`` schema. The connection
+string comes from the ``DATABASE_URL`` environment variable.
+"""
 
 import os
 from uuid import UUID, uuid4
 
 import psycopg
 from psycopg.types.json import Jsonb
+
+CONNECT_TIMEOUT_SECONDS = 5
+
+SCHEMA_SQL = """
+CREATE SCHEMA IF NOT EXISTS monitoring;
+
+CREATE TABLE IF NOT EXISTS monitoring.predictions (
+  id                      uuid PRIMARY KEY,
+  created_at              timestamptz NOT NULL DEFAULT now(),
+  app_version             text,
+  champion_name           text NOT NULL,
+  champion_version        text NOT NULL,
+  champion_prediction_g   double precision NOT NULL,
+  challenger_name         text,
+  challenger_version      text,
+  challenger_prediction_g double precision,
+  risk_category           text NOT NULL,
+  inputs                  jsonb NOT NULL,
+  latency_ms              double precision
+);
+CREATE INDEX IF NOT EXISTS predictions_created_at_idx
+  ON monitoring.predictions (created_at);
+
+CREATE TABLE IF NOT EXISTS monitoring.feedback (
+  prediction_id   uuid PRIMARY KEY REFERENCES monitoring.predictions (id),
+  actual_weight_g double precision NOT NULL
+    CHECK (actual_weight_g BETWEEN 200 AND 8000),
+  created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS monitoring.support_requests (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  category   text NOT NULL,
+  message    text NOT NULL
+);
+"""
+
+
+class PredictionNotFound(Exception):
+    """Feedback refers to a prediction ID that was never logged."""
 
 
 class MonitoringStore:
@@ -23,8 +69,13 @@ class MonitoringStore:
 
         return psycopg.connect(
             self.database_url,
-            connect_timeout=10,
+            connect_timeout=CONNECT_TIMEOUT_SECONDS,
         )
+
+    def ensure_schema(self) -> None:
+        """Create the monitoring schema and tables if they do not exist."""
+        with self._connect() as connection:
+            connection.execute(SCHEMA_SQL)
 
     def log_prediction(
         self,
@@ -105,15 +156,18 @@ class MonitoringStore:
                 created_at = now()
         """
 
-        with self._connect() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    query,
-                    (
-                        prediction_id,
-                        actual_weight_g,
-                    ),
-                )
+        try:
+            with self._connect() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        query,
+                        (
+                            prediction_id,
+                            actual_weight_g,
+                        ),
+                    )
+        except psycopg.errors.ForeignKeyViolation as exc:
+            raise PredictionNotFound(str(prediction_id)) from exc
 
     def save_support_request(
         self,

@@ -2,11 +2,12 @@
 
 import logging
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -17,7 +18,7 @@ from prometheus_client import (
     generate_latest,
 )
 
-from src.api.monitoring_store import MonitoringStore
+from src.api.monitoring_store import MonitoringStore, PredictionNotFound
 from src.api.schemas import (
     FeedbackRequest,
     FeedbackResponse,
@@ -39,11 +40,23 @@ logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Create the monitoring tables on startup if a database is configured."""
+    if monitoring_store.ready:
+        try:
+            monitoring_store.ensure_schema()
+        except Exception:
+            logger.exception("Could not prepare the monitoring database.")
+    yield
+
+
 app = FastAPI(
     title="STP Natality Birth Weight API",
     version="1.1.0",
     description="University research prototype for newborn weight prediction.",
     docs_url=None,
+    lifespan=lifespan,
 )
 
 app.mount(
@@ -119,15 +132,20 @@ async def prometheus_middleware(
 
     duration = perf_counter() - started
 
+    # Label by route template, not raw URL, so unknown paths cannot create
+    # an unbounded number of metric series.
+    route = request.scope.get("route")
+    path = getattr(route, "path", "unmatched")
+
     HTTP_REQUESTS.labels(
         method=request.method,
-        path=request.url.path,
+        path=path,
         status=response.status_code,
     ).inc()
 
     HTTP_LATENCY.labels(
         method=request.method,
-        path=request.url.path,
+        path=path,
     ).observe(duration)
 
     return response
@@ -206,12 +224,22 @@ def model_info() -> ModelInfoResponse:
 # ----------------------------
 
 
+def _log_prediction(**record) -> None:
+    """Write one prediction to the monitoring store; never raises."""
+    try:
+        monitoring_store.log_prediction(**record)
+    except Exception:
+        MONITORING_WRITE_ERRORS.labels(operation="prediction").inc()
+        logger.exception("Could not write prediction monitoring record.")
+
+
 @app.post(
     "/predict",
     response_model=PredictionResponse,
 )
 def predict(
     request: PredictionRequest,
+    background_tasks: BackgroundTasks,
 ) -> PredictionResponse:
 
     prediction_started = perf_counter()
@@ -252,34 +280,27 @@ def predict(
 
     prediction_id = uuid4()
 
-    # Monitoring failure should NOT break production prediction.
+    # Logged after the response is sent, so a slow or unavailable database
+    # never delays or breaks the user's prediction.
     if monitoring_store.ready:
-        try:
-            monitoring_store.log_prediction(
-                prediction_id=prediction_id,
-                inputs=request.model_dump(mode="json"),
-                champion_name=champion_info["model_name"],
-                champion_version=champion_info["model_version"],
-                champion_prediction_g=(champion_prediction),
-                challenger_name=(
-                    challenger_info["model_name"] if challenger_info else None
-                ),
-                challenger_version=(
-                    challenger_info["model_version"] if challenger_info else None
-                ),
-                challenger_prediction_g=(challenger_prediction),
-                risk_category=risk_category,
-                latency_ms=latency_ms,
-                app_version=os.getenv(
-                    "GIT_SHA",
-                    "local",
-                ),
-            )
-
-        except Exception:
-            MONITORING_WRITE_ERRORS.labels(operation="prediction").inc()
-
-            logger.exception("Could not write prediction " "monitoring record.")
+        background_tasks.add_task(
+            _log_prediction,
+            prediction_id=prediction_id,
+            inputs=request.model_dump(mode="json"),
+            champion_name=champion_info["model_name"],
+            champion_version=champion_info["model_version"],
+            champion_prediction_g=champion_prediction,
+            challenger_name=(
+                challenger_info["model_name"] if challenger_info else None
+            ),
+            challenger_version=(
+                challenger_info["model_version"] if challenger_info else None
+            ),
+            challenger_prediction_g=challenger_prediction,
+            risk_category=risk_category,
+            latency_ms=latency_ms,
+            app_version=os.getenv("GIT_SHA", "local"),
+        )
 
     PREDICTIONS.labels(result="success").inc()
 
@@ -307,7 +328,7 @@ def feedback(
     if not monitoring_store.ready:
         raise HTTPException(
             status_code=503,
-            detail=("Monitoring database " "is not configured."),
+            detail="Monitoring database is not configured.",
         )
 
     try:
@@ -315,6 +336,12 @@ def feedback(
             prediction_id=(request.prediction_id),
             actual_weight_g=(request.actual_weight_g),
         )
+
+    except PredictionNotFound as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Unknown prediction_id.",
+        ) from exc
 
     except Exception as exc:
         MONITORING_WRITE_ERRORS.labels(operation="feedback").inc()
@@ -345,7 +372,7 @@ def support(
     if not monitoring_store.ready:
         raise HTTPException(
             status_code=503,
-            detail=("Monitoring database " "is not configured."),
+            detail="Monitoring database is not configured.",
         )
 
     try:
@@ -361,7 +388,7 @@ def support(
 
         raise HTTPException(
             status_code=500,
-            detail=("Could not save " "support request."),
+            detail="Could not save support request.",
         ) from exc
 
     return SupportResponse(
