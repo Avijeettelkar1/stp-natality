@@ -23,6 +23,8 @@ dependencies = [
     "pydantic>=2.5",
     "uvicorn[standard]>=0.25",
     "httpx>=0.26",
+    "prometheus-client>=0.19",
+    "psycopg[binary]>=3.1,<4",
 ]
 
 [project.optional-dependencies]
@@ -53,6 +55,8 @@ api = [
     "fastapi>=0.108",
     "pydantic>=2.5",
     "uvicorn[standard]>=0.25",
+    "prometheus-client>=0.19",
+    "psycopg[binary]>=3.1,<4",
 ]
 
 [tool.setuptools.packages.find]

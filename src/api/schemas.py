@@ -1,5 +1,7 @@
 """HTTP request and response contracts for model serving."""
 
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
@@ -23,6 +25,7 @@ class PredictionRequest(BaseModel):
 
 
 class PredictionResponse(BaseModel):
+    prediction_id: UUID
     predicted_weight_grams: float
     risk_category: str
     model_version: str
@@ -31,9 +34,32 @@ class PredictionResponse(BaseModel):
     )
 
 
+class FeedbackRequest(BaseModel):
+    """Actual birth weight reported back for a logged prediction."""
+
+    prediction_id: UUID
+    actual_weight_g: float = Field(ge=200, le=8000)
+
+
+class FeedbackResponse(BaseModel):
+    status: str
+
+
+class SupportRequest(BaseModel):
+    category: str = Field(min_length=1, max_length=100)
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class SupportResponse(BaseModel):
+    id: UUID
+    status: str
+
+
 class HealthResponse(BaseModel):
     status: str
     model_ready: bool
+    challenger_ready: bool
+    database_ready: bool
     version: str
 
 

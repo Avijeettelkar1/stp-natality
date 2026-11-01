@@ -52,12 +52,36 @@ def prepare_features(request: PredictionRequest) -> pd.DataFrame:
 
 
 class ModelService:
-    """Load a versioned sklearn pipeline and expose stable prediction methods."""
+    """Load a versioned sklearn pipeline and expose stable prediction methods.
 
-    def __init__(self, model_path: Path | None = None):
-        configured = os.getenv("MODEL_PATH")
-        self.model_path = model_path or Path(configured or DEFAULT_MODEL_PATH)
-        self.metadata_path = self.model_path.with_name("model_metadata.json")
+    The same class serves the production (champion) model and an optional
+    shadow (challenger) model. A challenger is configured through its own
+    environment variable and is absent by default, so ``use_default=False``
+    leaves ``model_path`` unset and the service simply reports not ready.
+    """
+
+    def __init__(
+        self,
+        model_path: Path | None = None,
+        env_var: str = "MODEL_PATH",
+        use_default: bool = True,
+    ):
+        configured = os.getenv(env_var)
+        if model_path is not None:
+            resolved_path = model_path
+        elif configured:
+            resolved_path = Path(configured)
+        elif use_default:
+            resolved_path = DEFAULT_MODEL_PATH
+        else:
+            resolved_path = None
+
+        self.model_path = resolved_path
+        self.metadata_path = (
+            resolved_path.with_name("model_metadata.json")
+            if resolved_path is not None
+            else None
+        )
         self.model = None
         self.metadata: dict = {}
         self.load()
@@ -67,10 +91,10 @@ class ModelService:
         return self.model is not None
 
     def load(self) -> None:
-        if not self.model_path.exists():
+        if self.model_path is None or not self.model_path.exists():
             return
         self.model = joblib.load(self.model_path)
-        if self.metadata_path.exists():
+        if self.metadata_path and self.metadata_path.exists():
             self.metadata = json.loads(self.metadata_path.read_text(encoding="utf-8"))
 
     def predict(self, request: PredictionRequest) -> float:
