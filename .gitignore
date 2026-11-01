@@ -134,3 +134,4 @@ artifacts/
 # Monitoring reports (generated; HTML is large)
 # ============================================================
 reports/*.html
+reports/drift/

@@ -16,18 +16,38 @@ Kolmogorov-Smirnov tests and writes `reports/drift_report.json`. A feature is
 flagged only when `p < 0.01` and the KS statistic is at least `0.10`, avoiding
 alerts for statistically significant but negligible shifts in this large sample.
 
-5. Generate a richer Evidently drift report (optional dependency):
+5. Run the Evidently drift-monitoring job (optional dependency):
 
 ```bash
 uv sync --extra monitoring
-uv run python scripts/drift_evidently.py
+# Reference (training data) vs recent production inputs in Supabase:
+DATABASE_URL=... uv run python scripts/run_drift_monitoring.py
+# Or an offline comparison with no database:
+uv run python scripts/run_drift_monitoring.py --current-parquet data/processed/test.parquet
 ```
 
-This runs Evidently's `DataDriftPreset` over the model features, choosing a
-per-column statistical test (Wasserstein, Jensen-Shannon, etc.), and writes an
-interactive `reports/drift_evidently.html` plus a `reports/drift_evidently.json`
-summary (drift share, per-feature flags and scores). Use `--reference` and
-`--current` to compare any two processed parquet splits. Evidently is not part
+This is a standalone job (meant to run on a schedule, e.g. GitHub Actions) and
+never runs inside `/predict`. It loads the training reference, queries recent
+`monitoring.predictions.inputs` from Postgres (connection from `DATABASE_URL`),
+extracts the monitored fields, and runs Evidently's `DataDriftPreset`. It writes
+`reports/drift/latest.html` (keep as a presentation artifact) and a small
+`reports/drift/latest.json` summary for Grafana/alerts:
+
+```json
+{
+  "generated_at": "...",
+  "reference_rows": 10000,
+  "current_rows": 500,
+  "dataset_drift": true,
+  "drifted_features": 3,
+  "total_features": 14,
+  "drift_share": 0.214,
+  "features": {"gestation_weeks": {"drifted": true, "score": 0.18}}
+}
+```
+
+If there are too few production rows, the job does not fail — it writes
+`{"status": "insufficient_data", ...}` and exits cleanly. Evidently is not part
 of the serving image; it stays in the `monitoring` extra.
 
 ## What to monitor
