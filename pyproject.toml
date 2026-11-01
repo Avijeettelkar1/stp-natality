@@ -45,10 +45,10 @@ dev = [
     "seaborn>=0.13",
     "jupyter>=1.0",
     "ipykernel>=6.28",
-    "evidently>=0.4.30,<0.5",
+    "evidently>=0.7,<0.8",
 ]
 monitoring = [
-    "evidently>=0.4.30,<0.5",
+    "evidently>=0.7,<0.8",
 ]
 api = [
     "pandas>=2.1,<3",
