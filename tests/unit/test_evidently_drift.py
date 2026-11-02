@@ -12,6 +12,7 @@ import pytest
 from src.monitoring.evidently_drift import (
     CATEGORICAL_FEATURES,
     MONITORED_FEATURES,
+    drift_row_from_summary,
     extract_inputs,
     run_drift,
 )
@@ -74,6 +75,43 @@ def test_run_drift_returns_insufficient_data_when_too_few_rows():
     assert summary["current_rows"] == 3
     assert summary["required_rows"] == 100
     assert "generated_at" in summary
+
+
+# ---- monitoring.drift row mapping ------------------------------------------
+
+
+def test_drift_row_from_full_summary():
+    summary = {
+        "generated_at": "2026-11-02T00:00:00+00:00",
+        "reference_rows": 299431,
+        "current_rows": 256,
+        "dataset_drift": True,
+        "drifted_features": 9,
+        "total_features": 14,
+        "drift_share": 0.64,
+        "features": {"gestation_weeks": {"drifted": True, "score": 0.18}},
+    }
+    row = drift_row_from_summary(summary)
+    assert row["status"] == "ok"
+    assert row["drift_share"] == 0.64
+    assert row["dataset_drift"] is True
+    assert row["features"]["gestation_weeks"]["drifted"] is True
+
+
+def test_drift_row_from_insufficient_summary():
+    summary = {
+        "generated_at": "2026-11-02T00:00:00+00:00",
+        "status": "insufficient_data",
+        "reference_rows": 299431,
+        "current_rows": 5,
+        "required_rows": 100,
+    }
+    row = drift_row_from_summary(summary)
+    assert row["status"] == "insufficient_data"
+    # Drift fields absent -> None, so they land as SQL NULLs.
+    assert row["drift_share"] is None
+    assert row["dataset_drift"] is None
+    assert row["features"] is None
 
 
 # ---- expected JSON summary structure (needs Evidently) ---------------------

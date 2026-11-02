@@ -59,6 +59,13 @@ secrets `DATABASE_URL` (Supabase connection string) and the existing
 `DAGSHUB_USER` / `DAGSHUB_TOKEN`. Without `DATABASE_URL` the job warns and skips
 rather than failing.
 
+When `DATABASE_URL` is set, each run also appends one row to the
+`monitoring.drift` table (drift share, drifted-feature count, per-feature
+scores, or just `status = insufficient_data`). The Grafana dashboard's
+**"Evidently data drift"** panels read this table to trend drift share over time
+and show the latest per-feature breakdown — alongside the live input-drift
+panels fed directly from `monitoring.predictions`.
+
 ## What to monitor
 
 - Service: availability, HTTP errors, and latency.

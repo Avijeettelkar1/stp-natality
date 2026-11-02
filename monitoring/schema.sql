@@ -45,3 +45,24 @@ CREATE TABLE IF NOT EXISTS monitoring.support_requests (
 
 CREATE INDEX IF NOT EXISTS support_requests_created_at_idx
     ON monitoring.support_requests (created_at);
+
+-- One row per scheduled Evidently drift run (reference vs recent production
+-- inputs). Written by scripts/run_drift_monitoring.py; read by the Grafana
+-- "Evidently data drift" panels. Fields are nullable so an insufficient_data
+-- run still records that it happened.
+CREATE TABLE IF NOT EXISTS monitoring.drift (
+    id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at       timestamptz NOT NULL DEFAULT now(),
+    generated_at     timestamptz NOT NULL,
+    status           text        NOT NULL DEFAULT 'ok',
+    reference_rows   integer,
+    current_rows     integer,
+    dataset_drift    boolean,
+    drifted_features integer,
+    total_features   integer,
+    drift_share      double precision,
+    features         jsonb
+);
+
+CREATE INDEX IF NOT EXISTS drift_generated_at_idx
+    ON monitoring.drift (generated_at);
