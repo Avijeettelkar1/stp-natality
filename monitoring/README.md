@@ -24,10 +24,14 @@ The API is instrumented to feed both data sources above:
   `monitoring.feedback`, and `/support` writes to `monitoring.support_requests`.
   With no `DATABASE_URL` the API still serves predictions; the write endpoints
   return `503` and `/health` reports `database_ready: false`.
-- **Shadow model** (optional) — set `CHALLENGER_MODEL_PATH` to a second
-  `*.joblib` to run a challenger alongside the champion. Its prediction is
-  logged and the champion↔challenger difference is recorded, but it never
-  affects the response. `/health` reports `challenger_ready`.
+- **Shadow model** — the serving image ships an XGBoost challenger at
+  `models/challenger/` (built by `scripts/make_challenger.py`, tracked in DVC),
+  and the Dockerfile sets `CHALLENGER_MODEL_PATH` so it runs by default. On each
+  prediction the challenger also predicts; its value is logged and the
+  champion↔challenger difference recorded (`stp_shadow_prediction_difference_grams`,
+  dashboard panels "Champion vs challenger" / "Shadow difference"), but it never
+  affects the response. `/health` reports `challenger_ready`. Unset
+  `CHALLENGER_MODEL_PATH` to disable it.
 
 ## Setup
 

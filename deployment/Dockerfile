@@ -6,6 +6,7 @@ ARG GIT_SHA=local
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MODEL_PATH=/app/models/birth_weight_pipeline.joblib \
+    CHALLENGER_MODEL_PATH=/app/models/challenger/birth_weight_pipeline.joblib \
     PORT=8000 \
     GIT_SHA=${GIT_SHA}
 
@@ -28,6 +29,10 @@ COPY src ./src
 
 # The model is part of the image: one image tag = one model version.
 COPY models/birth_weight_pipeline.joblib models/model_metadata.json ./models/
+
+# Challenger model for shadow evaluation. Its prediction is logged and compared
+# to the champion's but never returned to the user (see CHALLENGER_MODEL_PATH).
+COPY models/challenger/ ./models/challenger/
 
 RUN useradd --create-home --uid 1000 app && chown -R app /app
 USER app
