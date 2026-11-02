@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  actions: write # to start the CD pipeline (retraining) when drift is detected
 
 concurrency:
   group: drift-monitoring
@@ -73,6 +74,29 @@ jobs:
             exit 0
           fi
           uv run python scripts/run_drift_monitoring.py --days "$DRIFT_DAYS"
+
+      # Continuous training (CT): drift starts the CD pipeline, which retrains
+      # all candidates; the promotion gate decides whether a new model goes live.
+      - name: Trigger retraining when drift is detected
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REPORT=reports/drift/latest.json
+          if [ ! -f "$REPORT" ]; then
+            echo "No drift report (not enough production data); no retraining."
+            exit 0
+          fi
+          DRIFT=$(python3 -c "import json; print(str(json.load(open('$REPORT')).get('dataset_drift', False)).lower())")
+          SHARE=$(python3 -c "import json; print(json.load(open('$REPORT')).get('drift_share', 0))")
+          if [ "$DRIFT" = "true" ]; then
+            echo "Dataset drift detected (drift share $SHARE): starting the CD pipeline."
+            gh workflow run cd.yml --ref main -f reason="retraining after drift (share $SHARE)"
+            echo "### Retraining started" >> "$GITHUB_STEP_SUMMARY"
+            echo "Dataset drift detected (drift share $SHARE). The CD pipeline was started to retrain and re-evaluate all candidates." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No dataset drift (drift share $SHARE); no retraining needed."
+            echo "No dataset drift (drift share $SHARE); no retraining started." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload drift report
         if: always()
