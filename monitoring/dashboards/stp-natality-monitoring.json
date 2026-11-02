@@ -1016,6 +1016,90 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "id": 320,
+      "type": "row",
+      "collapsed": false,
+      "title": "Subgroup performance (Live MAE by group, needs feedback)",
+      "datasource": null,
+      "gridPos": {
+        "x": 0,
+        "y": 84,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 321,
+      "type": "table",
+      "title": "Live MAE by gestation band",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_SUPABASE}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 85,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SUPABASE}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN (p.inputs->>'gestation_weeks')::float < 37 THEN 'preterm' WHEN (p.inputs->>'gestation_weeks')::float > 41 THEN 'post_term' ELSE 'term' END AS \"Gestation band\", round(avg(abs(p.champion_prediction_g - f.actual_weight_g))::numeric, 1) AS \"MAE (g)\", count(*) AS \"n\" FROM monitoring.predictions p JOIN monitoring.feedback f ON f.prediction_id = p.id GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 322,
+      "type": "table",
+      "title": "Live MAE by sex",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_SUPABASE}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 85,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SUPABASE}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN (p.inputs->>'is_male')::boolean THEN 'male' ELSE 'female' END AS \"Sex\", round(avg(abs(p.champion_prediction_g - f.actual_weight_g))::numeric, 1) AS \"MAE (g)\", count(*) AS \"n\" FROM monitoring.predictions p JOIN monitoring.feedback f ON f.prediction_id = p.id GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }
