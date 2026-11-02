@@ -14,13 +14,14 @@ Both are best-effort: an unreachable monitoring database or a failing shadow
 
 import logging
 import os
+import secrets
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
@@ -136,8 +137,20 @@ def health() -> HealthResponse:
         model_ready=model_service.ready,
         challenger_ready=challenger_service.ready,
         database_ready=monitoring_store.ready,
+        monitoring_dashboard=bool(os.getenv("GRAFANA_DASHBOARD_URL")),
         version=os.getenv("GIT_SHA", "local"),
     )
+
+
+@app.get("/monitoring", include_in_schema=False)
+def monitoring_dashboard() -> RedirectResponse:
+    """Open the Grafana dashboard; its URL is configured in GRAFANA_DASHBOARD_URL."""
+    url = os.getenv("GRAFANA_DASHBOARD_URL")
+    if not url:
+        raise HTTPException(
+            status_code=503, detail="Monitoring dashboard is not configured."
+        )
+    return RedirectResponse(url, status_code=307)
 
 
 @app.get("/model/info", response_model=ModelInfoResponse)
@@ -261,5 +274,17 @@ def support(request: SupportRequest) -> SupportResponse:
 
 # ── Prometheus scrape endpoint ───────────────────────────────────────────────
 @app.get("/metrics", include_in_schema=False)
-def metrics() -> Response:
+def metrics(authorization: str | None = Header(default=None)) -> Response:
+    """Prometheus metrics; protected by a bearer token when METRICS_TOKEN is set.
+
+    Grafana Cloud only scrapes authenticated endpoints, and the token keeps the
+    metrics private. Without METRICS_TOKEN (local runs, CI) the endpoint is open.
+    """
+    token = os.getenv("METRICS_TOKEN")
+    if token and not secrets.compare_digest(authorization or "", f"Bearer {token}"):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing metrics token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

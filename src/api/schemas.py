@@ -60,6 +60,7 @@ class HealthResponse(BaseModel):
     model_ready: bool
     challenger_ready: bool
     database_ready: bool
+    monitoring_dashboard: bool = False
     version: str
 
 
@@ -68,3 +69,12 @@ class ModelInfoResponse(BaseModel):
     model_version: str
     data_contract: str
     features: list[str]
+    # Recorded by the training pipeline; None for models trained without it.
+    trained_at_utc: str | None = None
+    training_rows: int | None = None
+    data_version: str | None = None
+    mlflow_run_id: str | None = None
+    test_mae: float | None = None
+    test_rmse: float | None = None
+    test_r2: float | None = None
+    validation_improvement_over_mean_pct: float | None = None

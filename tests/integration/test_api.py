@@ -1,4 +1,4 @@
-"""Integration tests for the prediction HTTP contract."""
+"""Integration tests for the prediction HTTP contract and the web UI."""
 
 from fastapi.testclient import TestClient
 
@@ -46,6 +46,7 @@ def test_predict_returns_valid_contract(monkeypatch):
     response = client.post("/predict", json=VALID_REQUEST)
     assert response.status_code == 200
     body = response.json()
+    assert body["prediction_id"]
     assert body["predicted_weight_grams"] == 3200.0
     assert body["risk_category"] == "normal"
     assert body["model_version"] == "test-1"
@@ -63,9 +64,44 @@ def test_predict_returns_503_without_model(monkeypatch):
     assert response.status_code == 503
 
 
-def test_index_serves_prediction_form():
+def test_index_serves_product_ui():
     response = client.get("/")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
     assert 'id="predict-form"' in response.text
-    assert "/predict" in response.text
+    assert 'href="/monitoring"' in response.text
+    assert "/feedback" in response.text
+
+
+def test_model_info_exposes_recorded_metrics(monkeypatch):
+    monkeypatch.setattr(
+        model_service,
+        "metadata",
+        {
+            "model_name": "lightgbm",
+            "model_version": "v1",
+            "test_mae": 362.8,
+            "test_r2": 0.389,
+        },
+    )
+    response = client.get("/model/info")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["model_name"] == "lightgbm"
+    assert body["test_mae"] == 362.8
+    assert body["test_r2"] == 0.389
+
+
+def test_monitoring_redirects_to_configured_dashboard(monkeypatch):
+    monkeypatch.setenv("GRAFANA_DASHBOARD_URL", "https://example.grafana.net/d/test")
+    response = client.get("/monitoring", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "https://example.grafana.net/d/test"
+    assert client.get("/health").json()["monitoring_dashboard"] is True
+
+
+def test_monitoring_without_configuration_returns_503(monkeypatch):
+    monkeypatch.delenv("GRAFANA_DASHBOARD_URL", raising=False)
+    response = client.get("/monitoring", follow_redirects=False)
+    assert response.status_code == 503
+    assert client.get("/health").json()["monitoring_dashboard"] is False

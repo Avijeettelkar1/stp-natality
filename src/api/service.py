@@ -111,4 +111,17 @@ class ModelService:
             "model_version": self.metadata.get("model_version", "unavailable"),
             "data_contract": self.metadata.get("data_contract", "natality-26-v1"),
             "features": self.metadata.get("features", MODEL_FEATURES),
+            **{
+                key: self.metadata.get(key)
+                for key in (
+                    "trained_at_utc",
+                    "training_rows",
+                    "data_version",
+                    "mlflow_run_id",
+                    "test_mae",
+                    "test_rmse",
+                    "test_r2",
+                    "validation_improvement_over_mean_pct",
+                )
+            },
         }
