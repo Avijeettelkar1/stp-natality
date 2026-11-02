@@ -273,12 +273,13 @@ def support(request: SupportRequest) -> SupportResponse:
 
 
 # ── Prometheus scrape endpoint ───────────────────────────────────────────────
-@app.get("/metrics", include_in_schema=False)
+@app.api_route("/metrics", methods=["GET", "HEAD"], include_in_schema=False)
 def metrics(authorization: str | None = Header(default=None)) -> Response:
     """Prometheus metrics; protected by a bearer token when METRICS_TOKEN is set.
 
     Grafana Cloud only scrapes authenticated endpoints, and the token keeps the
     metrics private. Without METRICS_TOKEN (local runs, CI) the endpoint is open.
+    HEAD is allowed because Grafana's connection test uses it.
     """
     token = os.getenv("METRICS_TOKEN")
     if token and not secrets.compare_digest(authorization or "", f"Bearer {token}"):

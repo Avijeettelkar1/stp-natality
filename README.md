@@ -51,6 +51,18 @@ uv run uvicorn src.api.main:app --reload --port 8000
 uv run python scripts/monitor_drift.py
 ```
 
+For an Evidently drift report (training reference vs recent production inputs),
+install the `monitoring` extra and run the monitoring job:
+
+```powershell
+uv sync --extra monitoring
+$env:DATABASE_URL = "..."; uv run python scripts/run_drift_monitoring.py
+# or offline, without a database:
+uv run python scripts/run_drift_monitoring.py --current-parquet data/processed/test.parquet
+```
+
+It writes `reports/drift/latest.html` and `reports/drift/latest.json`.
+
 Or start the API container:
 
 ```powershell
