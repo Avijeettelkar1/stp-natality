@@ -33,7 +33,28 @@ uv sync --extra dev
 
 That creates `.venv` and installs the project plus test and notebook tools.
 
-With the five DVC-tracked data files restored, run:
+### Data and model (DVC on DagsHub)
+
+The processed splits and the trained model are tracked with DVC on a private
+DagsHub remote (`dvc` itself is not a core dependency — install it via the
+`data` extra). To restore them you need **access to the DagsHub repo and a
+token**:
+
+```powershell
+uv sync --extra data                        # installs dvc[http]
+dvc remote modify dagshub --local auth basic
+dvc remote modify dagshub --local user  <your-dagshub-username>
+dvc remote modify dagshub --local password <your-dagshub-token>   # kept in .dvc/config.local (gitignored)
+dvc pull                                     # restores data/processed/ and models/
+```
+
+Get the token from DagsHub → **Settings → Tokens** (you must be a collaborator
+on the data repo). Without this access a fresh clone can still run the API, the
+tests, and the serving container against a synthetic model
+(`uv run python scripts/make_test_model.py models`), just not retrain on the
+real data.
+
+With the DVC-tracked data restored, run:
 
 ```powershell
 uv run python scripts/run_pipeline.py --nrows 100000

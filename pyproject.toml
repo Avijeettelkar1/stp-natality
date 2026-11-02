@@ -46,9 +46,15 @@ dev = [
     "jupyter>=1.0",
     "ipykernel>=6.28",
     "evidently>=0.7,<0.8",
+    "dvc[http]>=3.6,<4",
 ]
 monitoring = [
     "evidently>=0.7,<0.8",
+]
+# DVC with HTTP support, for pulling data/model from the DagsHub remote.
+# Requires DagsHub access + credentials (see README "Setup").
+data = [
+    "dvc[http]>=3.6,<4",
 ]
 api = [
     "pandas>=2.1,<3",
