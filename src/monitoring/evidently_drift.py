@@ -159,6 +159,25 @@ def run_drift(
     return result, summarize(result, len(reference), current_rows)
 
 
+def drift_row_from_summary(summary: dict) -> dict:
+    """Map a drift summary to a ``monitoring.drift`` row (DB-agnostic, testable).
+
+    Works for both a full summary and the ``insufficient_data`` shape; absent
+    fields become ``None`` so they land as SQL NULLs.
+    """
+    return {
+        "generated_at": summary.get("generated_at"),
+        "status": summary.get("status", "ok"),
+        "reference_rows": summary.get("reference_rows"),
+        "current_rows": summary.get("current_rows"),
+        "dataset_drift": summary.get("dataset_drift"),
+        "drifted_features": summary.get("drifted_features"),
+        "total_features": summary.get("total_features"),
+        "drift_share": summary.get("drift_share"),
+        "features": summary.get("features"),
+    }
+
+
 def write_outputs(result, summary: dict, html_path: Path, json_path: Path) -> None:
     """Persist the JSON summary always, and the HTML report when one exists."""
     import json
