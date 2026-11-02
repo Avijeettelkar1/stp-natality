@@ -1,7 +1,8 @@
-"""Create a small test model so the serving image can be built and smoke-tested.
+"""Create small test models so the serving image can be built and smoke-tested.
 
-The model is fitted on synthetic data and only reacts to gestation, sex and
-plurality. It is used by CI and for local UI checks, never for real estimates.
+Writes a synthetic champion (``models/``) and a slightly different synthetic
+challenger (``models/challenger/``) so the image's champion + shadow paths both
+have a model. Fitted on synthetic data; never used for real estimates.
 
 Usage:
     uv run python scripts/make_test_model.py models
@@ -21,9 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.models.pipeline import MODEL_FEATURES, build_pipeline  # noqa: E402
 
 
-def main(output_dir: Path) -> None:
+def _write_model(output_dir: Path, name: str, seed: int) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    rng = np.random.default_rng(0)
+    rng = np.random.default_rng(seed)
     n = 2000
     X = pd.DataFrame(0.0, index=range(n), columns=MODEL_FEATURES)
     X["gestation_weeks"] = rng.integers(28, 43, n)
@@ -36,13 +37,18 @@ def main(output_dir: Path) -> None:
         - 900 * (X["plurality"] - 1)
         + rng.normal(0, 250, n)
     )
-
     pipeline = build_pipeline(LinearRegression())
     pipeline.fit(X, y)
     joblib.dump(pipeline, output_dir / "birth_weight_pipeline.joblib")
-    metadata = {"model_name": "test-model", "model_version": "synthetic"}
+    metadata = {"model_name": name, "model_version": "synthetic"}
     (output_dir / "model_metadata.json").write_text(json.dumps(metadata, indent=2))
-    print(f"Test model written to {output_dir}")
+    print(f"Test model '{name}' written to {output_dir}")
+
+
+def main(output_dir: Path) -> None:
+    _write_model(output_dir, "test-model", seed=0)
+    # Different seed -> slightly different predictions, so shadow difference != 0.
+    _write_model(output_dir / "challenger", "test-challenger", seed=1)
 
 
 if __name__ == "__main__":
